@@ -341,8 +341,14 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
 }
 .card-row + .card-row { border-top: 1px solid var(--ink-line); }
 .card-row-body { flex: 1; min-width: 0; }
-.card-row-title { font-weight: 700; font-size: 14.5px; line-height: 1.25; }
-.card-row-sub { margin-top: 3px; font-size: var(--fs-sm); color: var(--text-2); line-height: 1.35; }
+/* Both are spans so a row can be a <button>; they still need their own lines,
+   or the subtitle runs on from the title as one paragraph. */
+.card-row-title { display: block; font-weight: 700; font-size: 14.5px; line-height: 1.25; }
+.card-row-sub {
+  display: block; margin-top: 3px;
+  font-size: var(--fs-sm); color: var(--text-2); line-height: 1.35;
+  white-space: pre-line;   /* subtitles carry real line breaks */
+}
 
 .metrics { display: flex; gap: var(--sp-2); overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
 .metrics::-webkit-scrollbar { display: none; }
@@ -472,6 +478,10 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
   display: flex; flex-direction: column; gap: 7px;
 }
 .chat-messages::-webkit-scrollbar { display: none; }
+/* Rest the conversation on the bottom edge, as a chat should. `margin-top:auto`
+   on the first child rather than `justify-content:flex-end`, which clips the
+   top of the list once the messages overflow. */
+.chat-messages > :first-child { margin-top: auto; }
 .msg {
   max-width: 82%; padding: 9px 12px; font-size: 13.5px; line-height: 1.4;
   word-wrap: break-word; white-space: pre-wrap;

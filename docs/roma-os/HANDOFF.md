@@ -376,6 +376,9 @@ Finance, Evening, Me, інтелекту digital clone.
 
 ## 7. Стан
 
+> **Етап 1 зібраний.** Що саме зроблено, що лишилось заглушкою і що треба
+> перевірити на живому телефоні — `docs/roma-os/STAGE-1.md`.
+
 - Гілка розробки: `claude/gallant-ride-l1zixz`
 - Зліпок старої Control Panel: гілка `legacy/control-panel-v1` (коміт `bd55a42`)
 - `main` і production deploy не чіпаються
