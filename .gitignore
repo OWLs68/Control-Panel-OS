@@ -1,0 +1,28 @@
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Playwright
+playwright-report/
+test-results/
+blob-report/
+
+# Vite PWA generated artifacts
+dev-dist/
+
+# Env — never commit real secrets. Only .env.example is tracked.
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.log
+npm-debug.log*
+
+# TS build info
+*.tsbuildinfo

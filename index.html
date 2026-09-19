@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- viewport-fit=cover is what makes env(safe-area-inset-*) resolve on iPhone. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="description" content="Roman AI OS Control Panel — операційний інтерфейс системи." />
+
+    <!-- iOS standalone behaviour (donor pattern from NeverMind). -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="AI OS Panel" />
+
+    <!-- Theme colour follows the active scheme so the iOS status bar matches. -->
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0e1117" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f6f7f9" />
+
+    <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
+    <link rel="apple-touch-icon" href="%BASE_URL%icons/apple-touch-icon.png" />
+
+    <title>Roman AI OS — Control Panel</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>
+      Для роботи панелі потрібен увімкнений JavaScript.
+    </noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
