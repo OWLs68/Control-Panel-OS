@@ -13,7 +13,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test",
-    "verify": "npm run lint && npm run test && npm run build"
+    "verify": "npm run lint && npm run test && npm run build",
+    "build:pages": "DEPLOY_BASE=/Control-Panel-OS/ npm run build",
+    "smoke:deploy": "node scripts/smoke-deploy.mjs"
   },
   "dependencies": {
     "react": "^19.3.0",

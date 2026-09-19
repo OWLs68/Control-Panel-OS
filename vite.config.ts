@@ -2,19 +2,50 @@ import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { fileURLToPath, URL } from 'node:url'
+import type { Plugin, ResolvedConfig } from 'vite'
+import { copyFileSync, writeFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 
 // Deployed under a sub-path on GitHub Pages (/Control-Panel-OS/), at root elsewhere.
+// It must be an ABSOLUTE path: the router derives its basename from BASE_URL, and
+// a relative base ('./') normalises to '/./', which matches no URL at all.
 const base = process.env.DEPLOY_BASE ?? '/'
+
+/**
+ * Static hosts have no SPA fallback, so a hard refresh on /projects would 404.
+ * GitHub Pages serves 404.html for unknown paths, and because the app reads
+ * location on boot, that renders the right screen. `.nojekyll` keeps Pages from
+ * running Jekyll over the build output.
+ */
+function staticHostFallback(): Plugin {
+  let config: ResolvedConfig
+
+  return {
+    name: 'static-host-fallback',
+    apply: 'build',
+    configResolved(resolved) {
+      config = resolved
+    },
+    // `writeBundle`, not `generateBundle`: index.html is emitted by Vite's own
+    // HTML plugin and is not in the bundle map when earlier hooks run.
+    writeBundle() {
+      const outDir = resolve(config.root, config.build.outDir)
+      copyFileSync(resolve(outDir, 'index.html'), resolve(outDir, '404.html'))
+      writeFileSync(resolve(outDir, '.nojekyll'), '')
+    },
+  }
+}
 
 export default defineConfig({
   base,
   plugins: [
     react(),
+    staticHostFallback(),
     VitePWA({
       registerType: 'prompt',
       includeAssets: ['favicon.svg', 'icons/apple-touch-icon.png'],
       manifest: {
-        id: '/',
+        id: './',
         name: 'Roman AI OS — Control Panel',
         short_name: 'AI OS Panel',
         description:
@@ -40,7 +71,7 @@ export default defineConfig({
         // code cache-first gets stuck on a stale build. The app shell is
         // NetworkFirst so a reachable network always wins; the cache is the
         // offline fallback, not the default answer.
-        navigateFallback: 'index.html',
+        navigateFallback: `${base}index.html`,
         runtimeCaching: [
           {
             urlPattern: ({ request }) => request.mode === 'navigate',

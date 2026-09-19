@@ -19,16 +19,17 @@ test.describe('Control Panel shell', () => {
     await page.goto('/')
 
     const sections: [string, string][] = [
-      ['Проєкти', 'Проєкти'],
-      ['Памʼять', 'Памʼять'],
-      ['Агенти', 'Агенти / AI-клієнти'],
-      ['Події', 'Події'],
-      ['Налашт', 'Налаштування'],
+      ['/projects', 'Проєкти'],
+      ['/memory', 'Памʼять'],
+      ['/agents', 'Агенти / AI-клієнти'],
+      ['/activity', 'Події'],
+      ['/settings', 'Налаштування'],
     ]
 
-    for (const [navLabel, heading] of sections) {
-      // Both navs are in the DOM; only the one for this viewport is visible.
-      await page.locator('a:visible', { hasText: navLabel }).first().click()
+    for (const [href, heading] of sections) {
+      // Anchor to the visible nav landmark and the href: matching on link text
+      // also matches body copy that happens to contain the same word.
+      await page.locator(`nav:visible a[href$="${href}"]`).first().click()
       await expect(page.getByRole('heading', { level: 1, name: heading })).toBeVisible()
     }
   })

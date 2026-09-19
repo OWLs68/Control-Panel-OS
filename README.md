@@ -123,7 +123,36 @@ npm run verify       # lint + test + build
 Іконки PWA перегенеровуються з `scripts/generate-icons.mjs` (рендерить SVG через
 Chromium, який уже є в Playwright — окремий image-пакет не потрібен).
 
-## 6. Що зараз реально працює
+## 6. Deploy (GitHub Pages)
+
+Застосунок публікується на GitHub Pages через
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) — статичний PWA, без
+backend і без секретів.
+
+**URL:** <https://owls68.github.io/Control-Panel-OS/>
+
+Два моменти, від яких залежить робочий sub-path deploy:
+
+- **`DEPLOY_BASE` має бути абсолютним** (`/Control-Panel-OS/`). Router бере `basename`
+  з `BASE_URL`, і відносний base (`./`) нормалізується у `/./`, який не матчить жодного
+  URL — застосунок просто не рендериться. Workflow бере base з
+  `actions/configure-pages`, тому шлях не захардкоджений.
+- **`404.html`** — копія `index.html`, яку генерує build. GitHub Pages не має SPA
+  fallback, тому без неї refresh на `/projects` дав би 404. Разом із нею Pages віддає
+  `404.html`, застосунок стартує, читає URL і показує правильний екран.
+
+Локально відтворити production-збірку:
+
+```bash
+npm run build:pages          # DEPLOY_BASE=/Control-Panel-OS/
+SMOKE_URL=https://owls68.github.io/Control-Panel-OS/ npm run smoke:deploy
+```
+
+`smoke:deploy` перевіряє саме те, що ламається тільки на реальному деплої: base path,
+client-side routing, refresh на deep link, scope service worker і доступність усіх іконок
+manifest — на мобільному й desktop viewport.
+
+## 7. Що зараз реально працює
 
 - Встановлюваний PWA: manifest, service worker, standalone, offline-кеш, prompt на оновлення.
 - Навігація між шістьма розділами + project detail view; bottom tab bar на мобільному,
@@ -133,7 +162,7 @@ Chromium, який уже є в Playwright — окремий image-пакет �
 - Світла й темна теми (системна або закріплена вручну).
 - iPhone safe areas, touch targets ≥ 44px, відсутність горизонтального скролу.
 
-## 7. Що зараз mock
+## 8. Що зараз mock
 
 **Усе.** Жоден реальний сервіс не опитується.
 
@@ -144,7 +173,7 @@ Chromium, який уже є в Playwright — окремий image-пакет �
 
 Коли зʼявиться реальний adapter, ці фікстури лишаються як набір даних для тестів.
 
-## 8. Security
+## 9. Security
 
 - У frontend немає секретів: ні API-ключів, ні токенів, ні bearer credentials.
 - У `localStorage` зберігається **лише обрана тема** — більше нічого.
@@ -154,7 +183,7 @@ Chromium, який уже є в Playwright — окремий image-пакет �
   потрапляє у клієнтський bundle і є **публічною** — секрети туди класти не можна.
 - Панель у поточному вигляді лише читає; дій рівня L2/L3 вона не виконує.
 
-## 9. Що потрібно для реальних integrations
+## 10. Що потрібно для реальних integrations
 
 Наступний крок — **thin gateway**, бо frontend не має тримати credentials. Далі, за
 пріоритетом:
@@ -169,7 +198,7 @@ Chromium, який уже є в Playwright — окремий image-пакет �
 | **Google Drive** | Read-only метадані canonical документів (назва, час зміни, посилання). |
 | **Backups** | Час останнього backup, результат перевірки restore, наявність off-device копії. |
 
-## 10. Межі
+## 11. Межі
 
 Свідомо **не** побудовано: Manager, Router, ієрархія агентів, departments, Telegram,
 task scheduler, cron, vector DB, повноцінний backend, складний RBAC, власна auth.
