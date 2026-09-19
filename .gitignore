@@ -1,6 +1,5 @@
 node_modules/
 dist/
-dist-ssr/
 *.local
 
 # Playwright
@@ -8,8 +7,8 @@ playwright-report/
 test-results/
 blob-report/
 
-# Vite PWA generated artifacts
-dev-dist/
+# Build output of the unit tests
+.tmp/
 
 # Env — never commit real secrets. Only .env.example is tracked.
 .env

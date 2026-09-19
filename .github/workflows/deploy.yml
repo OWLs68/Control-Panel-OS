@@ -1,19 +1,16 @@
-# Deploys the Control Panel to GitHub Pages.
+# Deploys to GitHub Pages from main.
 #
-# The app is a static PWA, so Pages is enough — no backend, no secrets.
-# Two details this build depends on:
-#   * DEPLOY_BASE must be the ABSOLUTE sub-path of the project site. The router
-#     takes its basename from BASE_URL, and a relative base ('./') normalises to
-#     '/./' and matches nothing.
-#   * The build emits 404.html (a copy of index.html) so a hard refresh on a
-#     deep link still renders, since Pages has no SPA fallback.
+# The app is a static PWA, so Pages is enough — no backend, no secrets. Every
+# asset is referenced relatively ('./bundle.js'), so the build needs no base
+# path and works at any sub-path the site is served from.
 name: Deploy to GitHub Pages
 
+# main only. The Roma OS branch must NOT publish: the live URL still serves the
+# old Control Panel, and switching it over is a separate, deliberate decision.
 on:
   push:
     branches:
       - main
-      - claude/gallant-ride-l1zixz
   workflow_dispatch:
 
 permissions:
@@ -44,6 +41,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Types
+        run: npm run typecheck
+
       - name: Unit tests
         run: npm run test
 
@@ -53,9 +53,6 @@ jobs:
           enablement: true
 
       - name: Build
-        # `base_path` is what Pages reports for this site, e.g. /Control-Panel-OS
-        env:
-          DEPLOY_BASE: ${{ steps.pages.outputs.base_path }}/
         run: npm run build
 
       - uses: actions/upload-pages-artifact@v3
@@ -74,9 +71,9 @@ jobs:
       - uses: actions/deploy-pages@v4
         id: deployment
 
-  # Smoke-tests the PUBLISHED site, not a local build: base path, routing, a hard
-  # refresh on a deep link, service-worker scope and manifest icons are exactly
-  # the things that only break once the app is served from its real URL.
+  # Smoke-tests the PUBLISHED site, not a local build: the base path, the
+  # service-worker scope and the manifest are exactly the things that only break
+  # once the app is served from its real URL.
   smoke:
     needs: deploy
     runs-on: ubuntu-latest
@@ -91,10 +88,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+      - name: Install browsers
+        run: npx playwright install --with-deps chromium webkit
 
       - name: Smoke test the deployed site
         env:
           SMOKE_URL: ${{ needs.deploy.outputs.page_url }}
-        run: npm run smoke:deploy
+        run: node scripts/smoke-deploy.mjs

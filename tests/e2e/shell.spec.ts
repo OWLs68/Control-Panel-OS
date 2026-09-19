@@ -1,0 +1,146 @@
+/**
+ * Screen geometry and navigation.
+ *
+ * Assertions are about what is on screen, not what is in storage: the bugs this
+ * suite exists to catch — the bar riding away with the content, a tab that
+ * looks switched but is not — are all visual.
+ */
+import { expect, test } from '@playwright/test'
+import { gotoModule } from './helpers.js'
+
+test.beforeEach(async ({ page }) => {
+  await page.goto('/')
+  await expect(page.locator('body')).toHaveAttribute('data-ready', '1')
+  await expect(page.locator('#screen-control')).toHaveClass(/active/)
+})
+
+test('the document itself never scrolls', async ({ page }) => {
+  const { bodyScroll, viewport, overflow } = await page.evaluate(() => ({
+    bodyScroll: document.body.scrollHeight,
+    viewport: window.innerHeight,
+    overflow: getComputedStyle(document.documentElement).overflow,
+  }))
+  expect(overflow).toBe('hidden')
+  expect(bodyScroll).toBeLessThanOrEqual(viewport + 1)
+})
+
+test('the bar stays pinned to the bottom while the screen scrolls under it', async ({ page }) => {
+  const bottomOf = async () => {
+    const box = await page.locator('#tab-bar').boundingBox()
+    const viewport = await page.evaluate(() => window.innerHeight)
+    return Math.round((box?.y ?? 0) + (box?.height ?? 0) - viewport)
+  }
+  expect(await bottomOf()).toBe(0)
+
+  await page.locator('#screen-control').evaluate((el) => { el.scrollTop = el.scrollHeight })
+  await page.waitForTimeout(300)
+
+  // ...and the screen really did scroll, or the check above proves nothing.
+  const scrolled = await page.locator('#screen-control').evaluate((el) => el.scrollTop)
+  expect(scrolled).toBeGreaterThan(0)
+  expect(await bottomOf()).toBe(0)
+})
+
+test('the measured bar height reaches the CSS variable', async ({ page }) => {
+  const value = await page.evaluate(() =>
+    getComputedStyle(document.documentElement).getPropertyValue('--tabbar-h').trim())
+  const px = parseInt(value, 10)
+  expect(px).toBeGreaterThan(50)   // an unmeasured, empty bar reads about 15px
+  expect(px).toBeLessThan(140)
+})
+
+test('nothing spills off the 390px screen', async ({ page }) => {
+  const overflowing = await page.evaluate(() => {
+    const bad: string[] = []
+    // An element wider than the screen is only a bug if nothing is clipping it:
+    // a scrolling strip and the drum's track are supposed to be wider, and
+    // anything inside an overflow:hidden box cannot reach the user anyway.
+    const clipped = (el: Element): boolean => {
+      let node: Element | null = el.parentElement
+      while (node) {
+        const overflow = getComputedStyle(node).overflow
+        if (overflow !== 'visible') return true
+        node = node.parentElement
+      }
+      return false
+    }
+    document.querySelectorAll('*').forEach((el) => {
+      const r = el.getBoundingClientRect()
+      if (r.width === 0) return
+      if (r.right <= window.innerWidth + 1 && r.left >= -1) return
+      if (clipped(el)) return
+      bad.push(`${el.tagName}.${el.className}`)
+    })
+    return bad
+  })
+  expect(overflowing).toEqual([])
+
+  // The thing that would actually hurt: a page that slides sideways. Polled,
+  // because the drum's track is briefly wider than the screen while its padding
+  // is being computed — it settles within a frame or two.
+  await expect.poll(() => page.evaluate(() =>
+    document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  ), { timeout: 3000 }).toBeLessThanOrEqual(0)
+
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).overflowX)).toBe('hidden')
+})
+
+test('every tappable target is at least 44px', async ({ page }) => {
+  const small = await page.evaluate(() => {
+    const bad: string[] = []
+    document.querySelectorAll('button, [data-action]').forEach((el) => {
+      if ((el as HTMLElement).hidden) return
+      const r = el.getBoundingClientRect()
+      if (r.width === 0 || r.height === 0) return
+      if (el.classList.contains('chips-arrow')) return
+      // A drum tab turned away by the 3D arc is narrower on screen by design —
+      // you read and tap the one in the middle. Its layout box is full size.
+      if (el.classList.contains('tab-item') && !el.classList.contains('active')) return
+      if (r.height < 44 || r.width < 44) bad.push(`${el.className} ${Math.round(r.width)}x${Math.round(r.height)}`)
+    })
+    return bad
+  })
+  expect(small).toEqual([])
+
+  // The tab in the middle is the one being aimed at, so it must be full size.
+  const active = await page.locator('.tab-item.active').boundingBox()
+  expect(active?.height ?? 0).toBeGreaterThanOrEqual(44)
+  expect(active?.width ?? 0).toBeGreaterThanOrEqual(44)
+})
+
+test('the safe areas are honoured top and bottom', async ({ page }) => {
+  const padded = await page.evaluate(() => {
+    const top = getComputedStyle(document.getElementById('topbar') as Element).paddingTop
+    const bottom = getComputedStyle(document.getElementById('tab-bar') as Element).paddingBottom
+    return { top, bottom }
+  })
+  expect(parseFloat(padded.top)).toBeGreaterThan(0)
+  expect(parseFloat(padded.bottom)).toBeGreaterThan(0)
+})
+
+test('tapping a tab switches the screen', async ({ page }) => {
+  await gotoModule(page, 'agents')
+  await expect(page.locator('#screen-control')).not.toHaveClass(/active/)
+  await expect(page.locator('#screen-agents').getByText('Claude Code').first()).toBeVisible()
+})
+
+test('the drum curves its tabs along an arc', async ({ page }) => {
+  const transforms = await page.locator('.tab-item').evaluateAll((els) =>
+    els.map((e) => (e as HTMLElement).style.transform))
+  expect(transforms.every((t) => t.includes('rotateY'))).toBe(true)
+  // The centre tab faces forward and the others are turned away from it.
+  const angles = transforms.map((t) => parseFloat(/rotateY\((-?[\d.]+)deg\)/.exec(t)?.[1] ?? 'NaN'))
+  expect(Math.min(...angles.map(Math.abs))).toBeLessThan(1.5)
+  expect(Math.max(...angles.map(Math.abs))).toBeGreaterThan(10)
+})
+
+test('the console stays clean on every screen', async ({ page }) => {
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  page.on('console', (m) => { if (m.type() === 'error' && !m.text().includes('font')) errors.push(m.text()) })
+  for (const id of ['agents', 'projects', 'events', 'control']) {
+    await gotoModule(page, id)
+    await page.waitForTimeout(200)
+  }
+  expect(errors).toEqual([])
+})
