@@ -54,6 +54,13 @@ test('the zone collapses on a swipe up and comes back', async ({ page }) => {
   await expect(page.locator('#crow-zone')).toHaveAttribute('data-state', 'collapsed')
   await expect(page.locator('.crow-collapsed')).toBeVisible()
 
+  // The collapsed strip has to fit the screen: a <button> sizes to its content,
+  // so it happily runs off the right edge if nothing stops it.
+  const strip = await page.locator('.crow-collapsed').boundingBox()
+  const width = await page.evaluate(() => window.innerWidth)
+  expect((strip?.x ?? 0) + (strip?.width ?? 0)).toBeLessThanOrEqual(width)
+  await expect(page.locator('.crow-collapsed-caret')).toBeVisible()
+
   await page.locator('[data-action="expand-crow"]').tap()
   await expect(page.locator('#crow-zone')).toHaveAttribute('data-state', 'expanded')
 })
