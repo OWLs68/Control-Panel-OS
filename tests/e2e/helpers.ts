@@ -1,39 +1,86 @@
-/** Shared gestures. Playwright has no swipe, so these dispatch real touch events. */
+/**
+ * Shared gestures.
+ *
+ * Playwright has no swipe primitive, so these dispatch touch events by hand.
+ * The awkward part is that the `Touch` constructor is a Chromium/Firefox
+ * feature — WebKit throws `Illegal constructor`, which silently meant the swipe
+ * specs were only ever testing Chromium. So the event is built with whatever
+ * the engine actually provides, falling back to a plain Event carrying
+ * `touches` and `changedTouches`: the app's handlers read clientX/clientY off
+ * those two lists and nothing else, so a duck-typed event drives the same code.
+ *
+ * What this does NOT prove is that the browser's real touch pipeline behaves —
+ * passive listeners, scroll contention, momentum. That still needs a phone.
+ */
 import { expect, type Page } from '@playwright/test'
+
+interface Point { x: number; y: number }
+
+async function touchSequence(page: Page, selector: string, points: Point[]): Promise<void> {
+  await page.locator(selector).evaluate((el, steps) => {
+    const makeTouch = (p: Point, i: number): unknown => {
+      // Chromium and Firefox have the constructor; WebKit has createTouch; if
+      // neither works, a plain object is enough for handlers that only read
+      // coordinates off the list.
+      try {
+        return new Touch({ identifier: i + 1, target: el, clientX: p.x, clientY: p.y })
+      } catch { /* not this engine */ }
+      const legacy = document as Document & {
+        createTouch?: (v: Window, t: Element, id: number, px: number, py: number, sx: number, sy: number) => unknown
+      }
+      if (typeof legacy.createTouch === 'function') {
+        return legacy.createTouch(window, el, i + 1, p.x, p.y, p.x, p.y)
+      }
+      return { identifier: i + 1, target: el, clientX: p.x, clientY: p.y, pageX: p.x, pageY: p.y }
+    }
+
+    const fire = (type: string, at: Point) => {
+      const list = [makeTouch(at, 0)]
+      const active = type === 'touchend' ? [] : list
+      let ev: Event
+      try {
+        ev = new TouchEvent(type, {
+          bubbles: true, cancelable: true,
+          touches: active as Touch[], changedTouches: list as Touch[],
+        })
+      } catch {
+        ev = new Event(type, { bubbles: true, cancelable: true })
+        Object.defineProperty(ev, 'touches', { value: active })
+        Object.defineProperty(ev, 'changedTouches', { value: list })
+      }
+      el.dispatchEvent(ev)
+    }
+
+    const path = steps as Point[]
+    fire('touchstart', path[0] as Point)
+    for (const step of path.slice(1)) fire('touchmove', step)
+    fire('touchend', path[path.length - 1] as Point)
+  }, points)
+}
 
 /** A vertical swipe on `selector`, from one y to another. */
 export async function swipeY(page: Page, selector: string, fromY: number, toY: number): Promise<void> {
-  await page.locator(selector).evaluate((el, [y1, y2]) => {
-    const touch = (y: number) => new Touch({ identifier: 1, target: el, clientX: 200, clientY: y })
-    const ev = (type: string, y: number) => new TouchEvent(type, {
-      bubbles: true, cancelable: true,
-      touches: type === 'touchend' ? [] : [touch(y)],
-      changedTouches: [touch(y)],
-    })
-    el.dispatchEvent(ev('touchstart', y1 as number))
-    el.dispatchEvent(ev('touchmove', ((y1 as number) + (y2 as number)) / 2))
-    el.dispatchEvent(ev('touchmove', y2 as number))
-    el.dispatchEvent(ev('touchend', y2 as number))
-  }, [fromY, toY])
+  await touchSequence(page, selector, [
+    { x: 200, y: fromY },
+    { x: 200, y: (fromY + toY) / 2 },
+    { x: 200, y: toY },
+  ])
   await page.waitForTimeout(450)
 }
 
 /** A horizontal drag across the drum, as a finger would do it. */
 export async function swipeDrum(page: Page, dx: number): Promise<void> {
-  await page.locator('#drum').evaluate((el, delta) => {
-    const box = el.getBoundingClientRect()
-    const y = box.top + box.height / 2
-    const from = box.left + box.width / 2
-    const touch = (x: number) => new Touch({ identifier: 1, target: el, clientX: x, clientY: y })
-    const ev = (type: string, x: number) => new TouchEvent(type, {
-      bubbles: true, cancelable: true,
-      touches: type === 'touchend' ? [] : [touch(x)],
-      changedTouches: [touch(x)],
-    })
-    el.dispatchEvent(ev('touchstart', from))
-    for (let i = 1; i <= 4; i++) el.dispatchEvent(ev('touchmove', from + ((delta as number) * i) / 4))
-    el.dispatchEvent(ev('touchend', from + (delta as number)))
-  }, dx)
+  const box = await page.locator('#drum').boundingBox()
+  if (!box) return
+  const y = box.y + box.height / 2
+  const from = box.x + box.width / 2
+  await touchSequence(page, '#drum', [
+    { x: from, y },
+    { x: from + dx * 0.25, y },
+    { x: from + dx * 0.5, y },
+    { x: from + dx * 0.75, y },
+    { x: from + dx, y },
+  ])
   await page.waitForTimeout(650)
 }
 

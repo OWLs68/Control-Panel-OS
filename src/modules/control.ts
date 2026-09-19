@@ -4,13 +4,13 @@
  * Four questions, in the order they get asked on a phone: what needs me, what
  * is moving, is the system healthy, and what is the system made of.
  */
-import { escapeHtml, relativeTime } from '../core/dom.js'
+import { relativeTime } from '../core/dom.js'
 import { count, plural } from '../core/plural.js'
 import { reg } from '../core/delegation.js'
 import { getAdapter } from '../data/adapters.js'
 import type { Attention, Severity } from '../data/types.js'
 import { icons } from '../ui/icons.js'
-import { badge, card, cardHead, dot, empty, metric, progress, row, sourceTag } from '../ui/primitives.js'
+import { badge, card, cardHead, dot, empty, metric, row, sourceTag } from '../ui/primitives.js'
 import { allModules, registerModule, type ModuleContext } from './registry.js'
 import { navigate } from './navigate.js'
 import { getEnabledModuleIds } from '../nav/module-state.js'
@@ -174,6 +174,3 @@ export function registerControl(): void {
     render, context, greeting,
   })
 }
-
-/** Exported for the Control metrics test. */
-export const _internals = { progress, escapeHtml }

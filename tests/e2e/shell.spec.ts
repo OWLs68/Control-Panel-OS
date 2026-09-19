@@ -25,12 +25,28 @@ test('the document itself never scrolls', async ({ page }) => {
 })
 
 test('the bar stays pinned to the bottom while the screen scrolls under it', async ({ page }) => {
-  const bottomOf = async () => {
-    const box = await page.locator('#tab-bar').boundingBox()
-    const viewport = await page.evaluate(() => window.innerHeight)
-    return Math.round((box?.y ?? 0) + (box?.height ?? 0) - viewport)
+  const bar = page.locator('#tab-bar')
+
+  // The contract, stated directly: pinned to the viewport, flush with its
+  // bottom edge. Asserting a pixel distance instead would be measuring the
+  // emulator, whose innerHeight lags the layout viewport by a pixel or three
+  // while the page settles.
+  const pinned = await bar.evaluate((el) => {
+    const cs = getComputedStyle(el)
+    return { position: cs.position, bottom: cs.bottom }
+  })
+  expect(pinned).toEqual({ position: 'fixed', bottom: '0px' })
+
+  // Let the web fonts land first: they change the bar's HEIGHT by a pixel or
+  // two, which moves its top edge while the bottom stays pinned.
+  await page.evaluate(() => document.fonts?.ready)
+  await page.waitForTimeout(150)
+
+  const bottomEdge = async () => {
+    const box = await bar.boundingBox()
+    return Math.round((box?.y ?? 0) + (box?.height ?? 0))
   }
-  expect(await bottomOf()).toBe(0)
+  const before = await bottomEdge()
 
   await page.locator('#screen-control').evaluate((el) => { el.scrollTop = el.scrollHeight })
   await page.waitForTimeout(300)
@@ -38,7 +54,9 @@ test('the bar stays pinned to the bottom while the screen scrolls under it', asy
   // ...and the screen really did scroll, or the check above proves nothing.
   const scrolled = await page.locator('#screen-control').evaluate((el) => el.scrollTop)
   expect(scrolled).toBeGreaterThan(0)
-  expect(await bottomOf()).toBe(0)
+
+  // The point: scrolling the content did not take the bar with it.
+  expect(await bottomEdge()).toBe(before)
 })
 
 test('the measured bar height reaches the CSS variable', async ({ page }) => {

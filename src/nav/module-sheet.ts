@@ -7,7 +7,7 @@
  * so "завжди" is stated rather than enforced by a disabled control nobody
  * understands.
  */
-import { $, $$, escapeHtml } from '../core/dom.js'
+import { $$, escapeHtml } from '../core/dom.js'
 import { reg } from '../core/delegation.js'
 import { icons } from '../ui/icons.js'
 import { openSheet, closeSheet } from '../ui/sheet.js'
@@ -102,8 +102,4 @@ function orderChip(id: string): string {
   const mod = getModule(id)
   if (!mod) return ''
   return `<button class="mod-order-item${orderPick === id ? ' sel' : ''}" data-action="pick-order" data-id="${escapeHtml(id)}">${escapeHtml(mod.label)}</button>`
-}
-
-export function isModuleSheetOpen(): boolean {
-  return $(`#${SHEET_ID}`) !== null
 }

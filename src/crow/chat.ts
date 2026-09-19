@@ -27,7 +27,6 @@ import { buildUiContext, describeContext } from '../core/ui-context.js'
 import { askCrow } from '../hermes/gateway.js'
 import { describeError, type CrowTurn } from '../hermes/contract.js'
 import { crowSpeaking, setChips } from './board.js'
-import type { ChipHandlers } from './chips.js'
 
 export type ChatState = 'closed' | 'a' | 'b'
 
@@ -44,13 +43,11 @@ let dock: HTMLElement | null = null
 let state: ChatState = 'closed'
 let unread = 0
 let sending = false
-let chipHandlers: ChipHandlers = { onChat: () => {}, onNav: () => {}, onOpen: () => {} }
 
 export function getChatState(): ChatState { return state }
 
-export function setupChat(root: HTMLElement, handlers: ChipHandlers): void {
+export function setupChat(root: HTMLElement): void {
   dock = root
-  chipHandlers = handlers
 
   root.innerHTML = `
     <div class="chat-window" id="chat-window">
@@ -147,11 +144,6 @@ export function closeChat(): void {
   win.style.height = '0px'
   win.style.maxHeight = '0px'
   $<HTMLTextAreaElement>('#chat-input')?.blur()
-}
-
-export function toggleChat(): void {
-  if (state === 'closed') openChat('a')
-  else closeChat()
 }
 
 /** Called by the keyboard handler: B does not fit once the keyboard is up. */
@@ -442,5 +434,3 @@ async function send(): Promise<void> {
     sending = false
   }
 }
-
-export function chatHandlers(): ChipHandlers { return chipHandlers }

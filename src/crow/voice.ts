@@ -38,10 +38,6 @@ function getSpeechCtor(): SpeechCtor | null {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null
 }
 
-export function isVoiceSupported(): boolean {
-  return getSpeechCtor() !== null
-}
-
 let recognition: SpeechRecognitionLike | null = null
 let baseText = ''
 let silenceTimer: number | null = null

@@ -9,7 +9,7 @@
  *
  * The geometry is ours (HANDOFF §3.5) and has no donor.
  */
-import { $, escapeHtml, relativeTime } from '../core/dom.js'
+import { $, relativeTime } from '../core/dom.js'
 import { regTouch } from '../core/touch.js'
 import { reg } from '../core/delegation.js'
 import { icons } from '../ui/icons.js'
@@ -96,8 +96,6 @@ export function setupCrowZone(root: HTMLElement, chipHandlers: ChipHandlers): vo
   if (date) date.textContent = today
 }
 
-export function getZoneState(): ZoneState { return state }
-
 export function setZoneState(next: ZoneState): void {
   if (!zone || state === next) return
   state = next
@@ -174,8 +172,3 @@ export function crowSpeaking(on: boolean): void {
   if (on) character?.startTalking()
   else character?.stopTalking()
 }
-
-/** Used by the collapsed strip and tests to read what Crow last said. */
-export function currentMessage(): BoardMessage | null { return current }
-
-export const _debug = { escapeHtml }

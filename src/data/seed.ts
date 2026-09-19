@@ -107,5 +107,3 @@ export function seedFixtures(force = false): boolean {
   try { localStorage.setItem(SEED_KEY, SEED_VERSION) } catch { /* private mode */ }
   return true
 }
-
-export const SEED_IDS = { AGENT, PROJECT, BLOCKER }

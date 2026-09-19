@@ -45,7 +45,7 @@ export function setupShell(): void {
     .join('')
 
   setupCrowZone(zone, chipHandlers)
-  setupChat(dock, chipHandlers)
+  setupChat(dock)
   setupDrum(bar, (id) => switchModule(id))
 
   reg('open-modules', () => {
