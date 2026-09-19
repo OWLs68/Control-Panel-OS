@@ -1,5 +1,10 @@
 # Roman AI OS — Control Panel
 
+> ⚠️ **Цей README описує ПЕРШУ версію Control Panel.**
+> Актуальний напрям — **Roma OS**. Починай з [`CLAUDE.md`](CLAUDE.md)
+> і [`docs/roma-os/HANDOFF.md`](docs/roma-os/HANDOFF.md).
+> Тут корисні тільки deploy-пайплайн, CI й обмеження середовища.
+
 Human-facing operational interface (інтерфейс для людини) до **Roman AI OS**, зроблений як
 PWA (Progressive Web App — вебзастосунок, який встановлюється як програма) з прицілом
 насамперед на iPhone.
