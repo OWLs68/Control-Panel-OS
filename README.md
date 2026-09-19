@@ -4,6 +4,9 @@ Human-facing operational interface (інтерфейс для людини) до
 PWA (Progressive Web App — вебзастосунок, який встановлюється як програма) з прицілом
 насамперед на iPhone.
 
+**▶ Відкрити застосунок: <https://owls68.github.io/Control-Panel-OS/>**
+([як він деплоїться](#6-deploy-github-pages))
+
 > **Панель не є джерелом правди.** Вона лише показує стан, який живе в інших системах.
 
 ---
