@@ -75,7 +75,7 @@
      the fallbacks keep the first paint sane before that happens. */
   --tabbar-h: 78px;
   --topbar-h: 62px;
-  --crow-h: 224px;
+  --crow-h: 176px;   /* measured at boot; this is only the first frame */
   --dock-h: 62px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -154,26 +154,39 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
 }
 
 /* ── Crow zone ───────────────────────────────────────────────────────── */
+/* Layout after NeverMind's board (owl/board.js, .owl-speech + .owl-chips-wrapper):
+   the figure beside the bubble at the bubble's height, the chips under both.
+   The zone is as tall as its content; boot measures it into --crow-h and the
+   screens start under it. */
 
 #crow-zone {
   position: fixed; left: 0; right: 0; z-index: 30;
   top: var(--topbar-h);
-  height: var(--crow-h);
   padding: 0 var(--sp-4);
-  overflow: hidden;
-  transition: height var(--motion-normal) var(--ease-spring);
 }
-.crow-expanded { position: relative; height: 100%; display: flex; align-items: flex-start; gap: 6px; }
+.crow-expanded {
+  position: relative;
+  display: flex; align-items: flex-start; gap: 8px;   /* the bubble keeps its content height; the figure is fitted to it */
+  touch-action: none;   /* .owl-speech — the swipe is ours, not the page's */
+}
+/* Clipped only while it moves or sits collapsed; at rest the tilted figure may overhang. */
+.crow-expanded.is-moving, #crow-zone[data-state="collapsed"] .crow-expanded { overflow: hidden; }
+/* Baseline of the two states. During a drag the heights are inline pixels;
+   after it settles the stylesheet describes the state again. */
+#crow-zone[data-state="collapsed"] .crow-expanded { height: 0; opacity: 0; visibility: hidden; }
+#crow-zone[data-state="expanded"] .crow-collapsed { height: 0; opacity: 0; visibility: hidden; border-width: 0; }
+/* While the finger holds the board, the screen's top follows it frame by frame. */
+.crow-dragging .screen { transition: none; }
 
-/* The character: full height, left, tilted. Not a round avatar, not a sticker.
-   Sized in its own variable so the tuning lives in one place. */
+/* The character: as tall as the bubble, tilted a little. The slot is as wide
+   as the widest pose at that height, so a pose change never moves the bubble. */
 .crow-figure {
-  --crow-figure-h: 172px;
-  position: relative; flex: 0 0 auto;
-  width: 118px; height: var(--crow-figure-h);
-  align-self: flex-end;
+  --crow-figure-h: 96px;
+  --crow-tilt: 10deg;
+  position: relative; flex: 0 0 auto; align-self: flex-end;
+  height: var(--crow-figure-h);
   display: flex; align-items: flex-end; justify-content: center;
-  transform: rotate(-14deg);
+  transform: rotate(calc(-1 * var(--crow-tilt)));
   transform-origin: 60% 100%;
   transition: transform var(--motion-slow) var(--ease-spring),
               opacity var(--motion-normal) var(--ease-smooth);
@@ -185,21 +198,19 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
 }
 .crow-figure.is-talking { animation: crow-talk 2.4s var(--ease-smooth) infinite; }
 @keyframes crow-talk {
-  0%, 100% { transform: rotate(-14deg) translateY(0); }
-  50%      { transform: rotate(-12.5deg) translateY(-3px); }
+  0%, 100% { transform: rotate(calc(-1 * var(--crow-tilt))) translateY(0); }
+  50%      { transform: rotate(calc(-1 * var(--crow-tilt) + 1.5deg)) translateY(-2px); }
 }
 .crow-shadow {
-  position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%);
-  width: 76px; height: 10px; border-radius: 50%;
+  position: absolute; bottom: 1px; left: 50%; transform: translateX(-50%);
+  width: 64%; height: 8px; border-radius: 50%;
   background: radial-gradient(ellipse at center, rgba(38,42,47,0.16), transparent 70%);
 }
-
-.crow-speech { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
 
 /* Speech bubble. Solid, not glass: it sits over a plain background, and a blur
    here would be the second layer in the stack for no gain. */
 .crow-bubble {
-  position: relative;
+  position: relative; flex: 1; min-width: 0;
   background: var(--primary); color: #fff;
   border-radius: 20px 20px 20px 6px;
   padding: 13px 15px;
@@ -242,6 +253,8 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
   width: 100%;
   display: flex; align-items: center; gap: var(--sp-3);
   height: 52px; padding: 0 14px 0 6px;
+  overflow: hidden;
+  touch-action: none;
   background: rgba(255,249,242,0.82);
   backdrop-filter: var(--glass-lg); -webkit-backdrop-filter: var(--glass-lg);
   border: 1px solid var(--border); border-radius: var(--r-lg);
@@ -255,44 +268,56 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
 .crow-collapsed-caret { color: var(--secondary); flex-shrink: 0; }
 .crow-collapsed-caret svg { width: 16px; height: 16px; display: block; }
 
-#crow-zone[data-state="collapsed"] { height: 64px; }
-#crow-zone[data-state="collapsed"] .crow-expanded { display: none; }
-#crow-zone[data-state="expanded"] .crow-collapsed { display: none; }
-
 /* ── Chips ───────────────────────────────────────────────────────────── */
+/* NeverMind .owl-chips-wrapper / .owl-speech-chips / .owl-chip / .owl-chips-arrow
+   (style.css:1355–1412), numbers untouched; the palette is ours. The strip
+   runs under the figure and the bubble and stays when the board collapses. */
 
-.chips-wrap { position: relative; display: flex; align-items: center; }
+.chips-wrap { position: relative; display: flex; align-items: center; padding: 0 8px; margin-top: 11px; }
 .chips {
-  display: flex; gap: 7px; overflow-x: auto; scroll-behavior: smooth;
-  scrollbar-width: none; -webkit-overflow-scrolling: touch;
-  padding: 2px 0;
+  display: flex; gap: 6px; flex-wrap: nowrap; flex: 1;
+  padding: 6px 2px 10px;
+  overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
   /* Isolates the strip's own composite layer. Without it a blurred ancestor
      clips the chips mid-scroll on iOS — four wasted iterations once. */
   transform: translateZ(0);
+  /* The donor's 4px edge fade (jMR6m): an indicator, not a crop. The zone has
+     no backdrop-filter, so this mask is safe here (PORTING.md §4). */
+  -webkit-mask-image: linear-gradient(to right, transparent 0, black 4px, black calc(100% - 4px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, black 4px, black calc(100% - 4px), transparent 100%);
 }
 .chips::-webkit-scrollbar { display: none; }
 .chip {
-  flex: 0 0 auto; min-height: 44px;   /* chips are tapped constantly — full thumb target */
-  display: inline-flex; align-items: center;
-  padding: 7px 15px; border-radius: var(--r-pill);
-  background: var(--surface); border: 1px solid var(--border);
-  font-size: 12.5px; font-weight: 700; color: var(--text); white-space: nowrap;
-  transition: opacity var(--motion-fast) var(--ease-smooth), transform var(--motion-fast) var(--ease-spring);
+  flex: 0 0 auto;
+  font-size: 12px; font-weight: 600;
+  padding: 7px 14px; border-radius: 22px;
+  background: rgba(255,255,255,0.92); color: var(--text);
+  border: none;
+  box-shadow: 0 2px 7px rgba(0,0,0,0.32);
+  transition: all 0.15s ease;
+  white-space: nowrap;
 }
-.chip-accent { background: var(--amber-soft); border-color: rgba(213,138,31,0.45); color: #8a5810; }
-.chip-danger { background: var(--error-soft); border-color: rgba(198,84,75,0.4); color: #8f3c35; }
-.chip.is-leaving { opacity: 0; transform: scale(0.9); }
+.chip:active { background: rgba(38,42,47,0.08); transform: scale(0.96); }
+.chip-accent { background: var(--amber-soft); color: #8a5810; }
+.chip-danger { background: var(--error-soft); color: #8f3c35; }
+.chip-speak {
+  background: rgba(213,138,31,0.9); color: rgba(255,255,255,0.97);
+  box-shadow: 0 2px 7px rgba(130,60,0,0.45);
+}
+.chip-speak:active { background: rgba(190,120,20,0.9); }
+.chip.is-leaving { opacity: 0; transform: scale(0.8); transition: opacity 0.2s, transform 0.2s; }
 .chips-arrow {
+  display: none;
   position: absolute; top: 50%; transform: translateY(-50%); z-index: 2;
   width: 26px; height: 26px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--surface); border: 1px solid var(--border); color: var(--text-2);
-  font-size: 15px; line-height: 1; opacity: 0; pointer-events: none;
-  transition: opacity var(--motion-fast) var(--ease-smooth);
+  background: #fff; border: 1.5px solid rgba(38,42,47,0.12);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.14);
+  font-size: 16px; font-weight: 700; color: #202326; line-height: 1;
+  align-items: center; justify-content: center; padding: 0;
 }
-.chips-arrow.visible { opacity: 1; pointer-events: auto; }
-.chips-arrow-left { left: -4px; }
-.chips-arrow-right { right: -4px; }
+.chips-arrow.visible { display: flex; }
+.chips-arrow-left { left: 0; }
+.chips-arrow-right { right: 0; }
 
 /* ── Screens ─────────────────────────────────────────────────────────── */
 
@@ -354,20 +379,27 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
   white-space: pre-line;   /* subtitles carry real line breaks */
 }
 
-.metrics { display: flex; gap: var(--sp-2); overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
-.metrics::-webkit-scrollbar { display: none; }
+/* Metric tiles — mockup.html .metrics/.metric: four in a row, no strip. */
+.metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-top: 8px; }
 .metric {
-  flex: 1 0 96px; min-height: 44px;
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--r-md); padding: 11px var(--sp-3); text-align: left;
+  border-radius: var(--r-md); padding: 9px 8px 10px; text-align: left;
+  box-shadow: var(--shadow);
 }
 .metric-ico {
-  width: 30px; height: 30px; border-radius: 9px;
-  display: flex; align-items: center; justify-content: center; margin-bottom: 7px;
+  width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; margin-bottom: 6px;
 }
-.metric-ico svg { width: 16px; height: 16px; }
-.metric-num { font-family: var(--font-d); font-size: 23px; font-weight: 800; line-height: 1; }
-.metric-lbl { margin-top: 3px; font-size: var(--fs-xs); font-weight: 600; color: var(--text-2); }
+.metric-ico svg { width: 14px; height: 14px; }
+.metric-num { display: block; font-family: var(--font-d); font-size: 18px; font-weight: 800; line-height: 1; }
+.metric-lbl { display: block; margin-top: 3px; font-size: 9px; font-weight: 600; color: var(--text-2); line-height: 1.25; }
+
+/* The system map — mockup.html .map: an SVG that scales to the card. */
+.map { padding: 6px 10px 10px; }
+.map > svg { width: 100%; height: auto; display: block; }   /* the map only: node icons are nested <svg>s */
+.map text { font-family: var(--font-b); }
+.map-node { cursor: pointer; transform-box: fill-box; transform-origin: center; }
+.map-node:active { transform: scale(0.94); }
 
 .btn {
   min-height: 44px; padding: 11px var(--sp-4); border-radius: var(--r-md);

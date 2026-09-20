@@ -14,31 +14,45 @@ test.beforeEach(async ({ page }) => {
   await expect(page.locator('#screen-control')).toHaveClass(/active/)
 })
 
-test('Crow stands full height at the left, tilted, with the bubble to his right', async ({ page }) => {
+test('Crow stands beside the bubble at the bubble\'s height, tilted a little', async ({ page }) => {
   const figure = page.locator('.crow-figure')
   await expect(figure).toBeVisible()
-  // Measure the laid-out height, not the bounding box: a rotated element's box
-  // is taller than the character drawn inside it.
-  const height = await figure.evaluate((el) => (el as HTMLElement).offsetHeight)
-  expect(height).toBeGreaterThanOrEqual(160)
-  expect(height).toBeLessThanOrEqual(180)
+
+  // The figure is exactly as tall as the bubble (Roman, 20.09): measure the
+  // laid-out heights, not the bounding boxes — a rotated box is taller.
+  const sizes = await page.evaluate(() => {
+    const f = document.querySelector('.crow-figure') as HTMLElement
+    const b = document.querySelector('#crow-bubble') as HTMLElement
+    return { fh: f.offsetHeight, fw: f.offsetWidth, bh: b.offsetHeight }
+  })
+  expect(Math.abs(sizes.fh - sizes.bh)).toBeLessThanOrEqual(2)
+  // Full body, not a round avatar: taller than it is wide.
+  expect(sizes.fh).toBeGreaterThan(sizes.fw)
+  // The slot fits the widest pose at this height, so no pose can shrink or drop.
+  expect(sizes.fw).toBeGreaterThanOrEqual(Math.floor(sizes.fh * 568 / 680) - 1)
 
   const tilt = await figure.evaluate((el) => {
     const m = new DOMMatrix(getComputedStyle(el).transform)
     return Math.abs((Math.atan2(m.b, m.a) * 180) / Math.PI)
   })
-  expect(tilt).toBeGreaterThanOrEqual(10)
+  expect(tilt).toBeGreaterThanOrEqual(5)
   expect(tilt).toBeLessThanOrEqual(20)
 
   const figureBox = await figure.boundingBox()
   const bubble = await page.locator('#crow-bubble').boundingBox()
   expect(bubble?.x).toBeGreaterThan(figureBox?.x ?? 0)
-
-  // Full height, not a round avatar: clearly taller than it is wide.
-  expect(height).toBeGreaterThan(await figure.evaluate((el) => (el as HTMLElement).offsetWidth))
 })
 
-test('chips sit under the bubble and doing one sends it as my own words', async ({ page }) => {
+test('chips run under the figure and the bubble, and doing one sends it as my own words', async ({ page }) => {
+  const strip = await page.locator('#crow-chips').boundingBox()
+  const bubble = await page.locator('#crow-bubble').boundingBox()
+  const figure = await page.locator('.crow-figure').boundingBox()
+  // Under both: below the bubble, starting where the figure starts, as
+  // NeverMind's .owl-chips-wrapper does.
+  expect(strip?.y ?? 0).toBeGreaterThanOrEqual((bubble?.y ?? 0) + (bubble?.height ?? 0) - 1)
+  expect(strip?.x ?? 0).toBeLessThan(bubble?.x ?? 0)
+  expect(strip?.x ?? 0).toBeLessThan((figure?.x ?? 0) + (figure?.width ?? 0))
+
   const chip = page.locator('#crow-chips .chip').first()
   await expect(chip).toBeVisible()
   const label = (await chip.textContent())?.trim() ?? ''
@@ -48,11 +62,21 @@ test('chips sit under the bubble and doing one sends it as my own words', async 
   await expect(page.locator('.msg-bubble--agent').last()).toBeVisible()
 })
 
-test('the zone collapses on a swipe up and comes back', async ({ page }) => {
+test('«Поговорити» ends the strip and opens the chat', async ({ page }) => {
+  const speak = page.locator('#crow-chips .chip-speak')
+  await expect(speak).toHaveText('Поговорити')
+  await expect(page.locator('#crow-chips .chip').last()).toHaveClass(/chip-speak/)
+  await speak.tap()
+  await expect(page.locator('#crow-chat-window')).toHaveClass(/open/)
+})
+
+test('the zone collapses on a swipe up, keeps its chips, and comes back', async ({ page }) => {
   await expect(page.locator('#crow-zone')).toHaveAttribute('data-state', 'expanded')
   await swipeY(page, '.crow-expanded', 260, 180)
   await expect(page.locator('#crow-zone')).toHaveAttribute('data-state', 'collapsed')
   await expect(page.locator('.crow-collapsed')).toBeVisible()
+  // NeverMind keeps the chips in both states; so do we.
+  await expect(page.locator('#crow-chips .chip').first()).toBeVisible()
 
   // The collapsed strip has to fit the screen: a <button> sizes to its content,
   // so it happily runs off the right edge if nothing stops it.
@@ -63,13 +87,58 @@ test('the zone collapses on a swipe up and comes back', async ({ page }) => {
 
   await page.locator('[data-action="expand-crow"]').tap()
   await expect(page.locator('#crow-zone')).toHaveAttribute('data-state', 'expanded')
+  await expect(page.locator('.crow-figure')).toBeVisible()
+})
+
+test('a swipe down on the strip brings the board back', async ({ page }) => {
+  await swipeY(page, '.crow-expanded', 260, 180)
+  await expect(page.locator('#crow-zone')).toHaveAttribute('data-state', 'collapsed')
+  await swipeY(page, '.crow-collapsed', 100, 220)
+  await expect(page.locator('#crow-zone')).toHaveAttribute('data-state', 'expanded')
+})
+
+test('the collapse follows the finger and springs back short of the threshold', async ({ page }) => {
+  // Let the web fonts land first: they change the bubble's height, and the
+  // figure and the row follow it.
+  await page.evaluate(() => document.fonts?.ready)
+  await page.waitForTimeout(200)
+  const full = await page.locator('.crow-expanded').evaluate((el) => (el as HTMLElement).offsetHeight)
+  // Touch down and drag 30px up — under the donor's 40px — without letting go.
+  const mid = await page.locator('.crow-expanded').evaluate((el) => {
+    const fire = (type: string, y: number) => {
+      const t = { identifier: 1, target: el, clientX: 200, clientY: y }
+      const ev = new Event(type, { bubbles: true, cancelable: true })
+      Object.defineProperty(ev, 'touches', { value: type === 'touchend' ? [] : [t] })
+      Object.defineProperty(ev, 'changedTouches', { value: [t] })
+      el.dispatchEvent(ev)
+    }
+    fire('touchstart', 200)
+    fire('touchmove', 185)
+    fire('touchmove', 170)
+    const height = (el as HTMLElement).offsetHeight
+    fire('touchend', 170)
+    return height
+  })
+  expect(mid).toBeLessThan(full - 10)
+  expect(mid).toBeGreaterThan(0)
+  // Released short of 40px: back to the open board, at its natural height.
+  await page.waitForTimeout(400)
+  await expect(page.locator('#crow-zone')).toHaveAttribute('data-state', 'expanded')
+  expect(await page.locator('.crow-expanded').evaluate((el) => (el as HTMLElement).offsetHeight)).toBe(full)
+})
+
+test('a swipe down on the open board opens the chat, as in NeverMind', async ({ page }) => {
+  await swipeY(page, '.crow-expanded', 160, 300)
+  await expect(page.locator('#crow-chat-window')).toHaveClass(/open/)
+  await expect(page.locator('#crow-zone')).toHaveAttribute('data-state', 'expanded')
 })
 
 test('collapsing gives the screen its space back', async ({ page }) => {
   const before = await page.locator('#screen-control').boundingBox()
   await swipeY(page, '.crow-expanded', 260, 180)
-  const after = await page.locator('#screen-control').boundingBox()
-  expect(after?.height ?? 0).toBeGreaterThan(before?.height ?? 0)
+  await expect(page.locator('#crow-zone')).toHaveAttribute('data-state', 'collapsed')
+  await expect.poll(async () => (await page.locator('#screen-control').boundingBox())?.height ?? 0)
+    .toBeGreaterThan(before?.height ?? 0)
 })
 
 test('the input is present on every module', async ({ page }) => {

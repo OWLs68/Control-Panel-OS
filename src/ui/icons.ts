@@ -25,6 +25,7 @@ export const icons = {
   wallet: s('<rect x="3" y="6.5" width="18" height="12" rx="2.5"/><path d="M16 3.5H7a2 2 0 0 0-2 2v1h12z"/><circle cx="12" cy="12.5" r="1.8"/>'),
   moon: s('<path d="M20 13.2A8.2 8.2 0 1 1 10.8 4a6.4 6.4 0 0 0 9.2 9.2z"/>'),
   person: s('<circle cx="12" cy="8.5" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/>'),
+  lock: s('<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>'),
   note: s('<path d="M13 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9.5z"/><path d="M13 3.5v6h6M8.5 14h7"/>'),
 } as const
 
