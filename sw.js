@@ -9,19 +9,45 @@ const CACHE = '__CACHE_VERSION__'
 const PRECACHE = "__PRECACHE__"
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(PRECACHE)))
-})
-
-self.addEventListener('activate', (event) => {
+  // Take over as soon as we are installed.
+  //
+  // This matters because of what came before: the previous Control Panel
+  // shipped a Workbox worker registered with `registerType: 'prompt'`, which
+  // never steps aside on its own. Without skipWaiting, that worker keeps
+  // serving its own precached index.html and hashed bundles for as long as the
+  // app is open, this worker sits in "waiting" forever, and the phone shows the
+  // old app no matter how many times the URL is opened.
   event.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim()),
+    caches.open(CACHE)
+      .then((cache) => cache.addAll(PRECACHE))
+      .then(() => self.skipWaiting()),
   )
 })
 
-// A waiting worker only takes over when the page asks, so an update never
-// swaps the bundle out from under a running screen.
+self.addEventListener('activate', (event) => {
+  event.waitUntil((async () => {
+    const keys = await caches.keys()
+    const stale = keys.filter((k) => k !== CACHE)
+    await Promise.all(stale.map((k) => caches.delete(k)))
+    await self.clients.claim()
+
+    // If any cache we just removed did NOT belong to this app, we have replaced
+    // a different one — its HTML is on screen right now and claiming control
+    // does not re-render it. Reload those pages once so the switch completes
+    // without the user having to know to refresh.
+    //
+    // Self-limiting: from the next version on, the only caches ever deleted are
+    // our own older ones, so this never reloads anybody again.
+    const replacedAnotherApp = stale.some((k) => !k.startsWith('roma-os-'))
+    if (!replacedAnotherApp) return
+    const clients = await self.clients.matchAll({ type: 'window' })
+    for (const client of clients) {
+      if ('navigate' in client) client.navigate(client.url)
+    }
+  })())
+})
+
+// Kept for the page to nudge an update along explicitly.
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting()
 })
