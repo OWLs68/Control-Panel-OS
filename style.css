@@ -191,21 +191,20 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
   transform-origin: 60% 100%;
 }
 /* Static: no bobbing, no pose flip on a greeting — the figure "flying" up and
-   down on every tab read as a glitch on the phone (Roman, 20.09). The shadow
-   is the mockup's (.crow-fig): a soft drop shadow on the silhouette plus a
-   contact ellipse under the feet, both scaled to the figure's height
-   (104×15 at 228px in the mockup). */
+   down on every tab read as a glitch on the phone (Roman, 20.09). */
 .crow-figure img {
+  position: relative; z-index: 1;   /* stands on the oval, not under it */
   width: auto; height: 100%; max-width: 100%;
   object-fit: contain; object-position: bottom center;
-  filter: drop-shadow(0 8px 14px rgba(38,42,47,0.22));
   pointer-events: none; user-select: none; -webkit-user-drag: none;
 }
+/* The ground: one oval with a gradient under the feet, nothing else — enough
+   to read that he stands on a surface (Roman, 20.09). Scaled to the figure. */
 .crow-shadow {
-  position: absolute; bottom: 2px; left: 52%; transform: translateX(-50%);
-  width: calc(var(--crow-figure-h) * 0.456); height: calc(var(--crow-figure-h) * 0.066);
+  position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); z-index: 0;
+  width: calc(var(--crow-figure-h) * 0.72); height: calc(var(--crow-figure-h) * 0.11);
   border-radius: 50%;
-  background: radial-gradient(ellipse, rgba(38,42,47,0.26) 0%, transparent 70%);
+  background: radial-gradient(ellipse at center, rgba(38,42,47,0.34) 0%, rgba(38,42,47,0.16) 45%, transparent 72%);
 }
 
 /* Speech bubble. Solid, not glass: it sits over a plain background, and a blur
