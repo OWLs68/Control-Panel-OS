@@ -18,6 +18,7 @@ import { setupShell } from '../nav/shell.js'
 import { setupKeyboardAvoiding } from '../crow/keyboard.js'
 import { setupVoiceInput } from '../crow/voice.js'
 import { setupDeployInfo } from '../ui/deploy-info.js'
+import { setupSettings } from '../ui/settings.js'
 import { registerControl } from '../modules/control.js'
 import { registerAgents } from '../modules/agents.js'
 import { registerProjects } from '../modules/projects.js'
@@ -48,6 +49,7 @@ export function boot(): void {
   setupKeyboardAvoiding()
   setupVoiceInput()
   setupDeployInfo()
+  setupSettings()
 
   // Web fonts change the bars' height when they land, so measure once more.
   if (document.fonts?.ready) void document.fonts.ready.then(measureChrome)

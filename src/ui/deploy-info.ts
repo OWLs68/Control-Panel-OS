@@ -19,47 +19,65 @@ import { openSheet } from './sheet.js'
 const REPO = 'https://github.com/OWLs68/Control-Panel-OS'
 const SHEET_ID = 'deploy-info'
 
+export interface DeployInfo {
+  version: string
+  commit: string
+  branch: string
+  built: string
+}
+
+/** What build.js stamped into the badge; a local build reads vdev / local / dev. */
+export function readDeployInfo(): DeployInfo {
+  const badge = $('#deploy-version')
+  return {
+    version: badge ? ($('.deploy-badge-num', badge)?.textContent?.trim() || 'vdev') : 'vdev',
+    commit: badge?.dataset.commit || 'local',
+    branch: badge?.dataset.branch || 'dev',
+    built: badge?.dataset.built || '',
+  }
+}
+
+/** «v19 · 21.09 00:58», or «vdev» for a local build. */
+export function deployLabel(info: DeployInfo = readDeployInfo()): string {
+  return info.built && info.version !== 'vdev' ? `${info.version} · ${info.built}` : info.version
+}
+
 export function setupDeployInfo(): void {
-  reg('show-deploy-info', () => {
-    const badge = $('#deploy-version')
-    if (!badge) return
-    const version = $('.deploy-badge-num', badge)?.textContent?.trim() || 'vdev'
-    const commit = badge.dataset.commit || 'local'
-    const branch = badge.dataset.branch || 'dev'
-    const built = badge.dataset.built || ''
-
-    const commitCell = commit !== 'local'
-      ? `<a href="${REPO}/commit/${escapeHtml(commit)}" target="_blank" rel="noopener">${escapeHtml(commit)}</a>`
-      : escapeHtml(commit)
-
-    openSheet({
-      id: SHEET_ID,
-      title: 'Інфо про деплой',
-      subtitle: 'Що зараз на телефоні',
-      body: `
-        <div class="deploy-rows">
-          ${row('Версія', escapeHtml(built && version !== 'vdev' ? `${version} · ${built}` : version))}
-          ${row('Коміт', commitCell)}
-          ${row('Гілка', escapeHtml(branch))}
-        </div>
-        <div class="deploy-hint">Якщо номер не змінився після деплою — CI ще не доробив або
-          телефон тримає стару збірку. Закрий застосунок повністю і відкрий знову,
-          або натисни кнопку нижче.</div>
-        <div class="deploy-actions">
-          <button class="btn btn-dark btn-block" data-action="hard-refresh">Оновити застосунок</button>
-        </div>`,
-    })
-  })
-
+  reg('show-deploy-info', showDeployInfo)
   // Drop the worker and every cache, then load the page from the network.
   reg('hard-refresh', () => { void hardRefresh() })
+}
+
+export function showDeployInfo(): void {
+  const info = readDeployInfo()
+  const commitCell = info.commit !== 'local'
+    ? `<a href="${REPO}/commit/${escapeHtml(info.commit)}" target="_blank" rel="noopener">${escapeHtml(info.commit)}</a>`
+    : escapeHtml(info.commit)
+
+  openSheet({
+    id: SHEET_ID,
+    title: 'Інфо про деплой',
+    subtitle: 'Що зараз на телефоні',
+    body: `
+      <div class="deploy-rows">
+        ${row('Версія', escapeHtml(deployLabel(info)))}
+        ${row('Коміт', commitCell)}
+        ${row('Гілка', escapeHtml(info.branch))}
+      </div>
+      <div class="deploy-hint">Якщо номер не змінився після деплою — CI ще не доробив або
+        телефон тримає стару збірку. Закрий застосунок повністю і відкрий знову,
+        або натисни кнопку нижче.</div>
+      <div class="deploy-actions">
+        <button class="btn btn-dark btn-block" data-action="hard-refresh">Оновити застосунок</button>
+      </div>`,
+  })
 }
 
 function row(label: string, value: string): string {
   return `<div class="deploy-row"><span class="deploy-row-label">${label}</span><span class="deploy-row-value">${value}</span></div>`
 }
 
-async function hardRefresh(): Promise<void> {
+export async function hardRefresh(): Promise<void> {
   try {
     if ('serviceWorker' in navigator) {
       const regs = await navigator.serviceWorker.getRegistrations()
