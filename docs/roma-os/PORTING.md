@@ -93,6 +93,26 @@
 `8px 10px r20`, рамка `1.5px`, крапка `7`, текст `14/600` (обраний `700`);
 ‹ › `26×26` круглі, svg `14`, вимкнені `opacity 0.25`.
 
+### Модель прокрутки екранів (аудит 20.09)
+
+| Що | Звідки | Стан |
+|---|---|---|
+| `html, body`: `height 100%`, `overflow hidden`, `overscroll-behavior none` | `style.css:3–8` | ✅ дослівно |
+| Скролер = сама сторінка: `position absolute; inset 0`, `overflow-y auto`, `overflow-x hidden`, `-webkit-overflow-scrolling touch`, `overscroll-behavior none`, схований scrollbar, ховається через `opacity`/`visibility`, не `display:none` | `.page`, `style.css:206–233` | ✅ (`.screen`) |
+| Повідомлення чату: `overscroll-behavior contain` | `.ai-bar-messages`, `style.css:1094–1099` | ✅ |
+| Стрічки чіпів: `overflow-x auto`, без scrollbar, `-webkit-overflow-scrolling touch` | `.owl-speech-chips` | ✅ |
+| Нижній відступ скролера: `--tabbar-h + 100px` | inline у `index.html` | ⚠️ у нас `--dock-h + --tabbar-h + 20px`; див. ISS-003 |
+| Позиція прокрутки при перемиканні вкладки не скидається | `switchTab`, `nav.js:119–133` | ❌ у нас `scrollTop = 0`; ISS-005 |
+| Перехід сторінки: `translateX(20px)` + `opacity`, `0.25s ease` | `.page`, `style.css:218–219` | ⚠️ у нас `22px`, `0.28s` спрінг |
+
+Бічні відступи екранів у донора `14px` (inbox `16`, шапка `20`); у нас
+`16px` скрізь — це з `mockup.html` (`.pad { padding-inline: 16px }`), бо
+композиція береться з мокапа, а не з донора.
+
+Табло донора не згортається при скролі — лише свайпом і тапом
+(`owl/board.js:82–85`); наша зона Crow поводиться так само. Формулювання
+«при скролі» в `HANDOFF §3.5` донором не підтверджене.
+
 ---
 
 ## 3. Свідомі відступи від донора (і чому)
@@ -149,7 +169,9 @@
 |---|---|---|
 | **Модалка-«картка» зі `scale(0→1)`** | `DESIGN_SYSTEM.md` «Bottom Sheet» еталон `calendar-modal`, `calendar.js:80–90` | Другий донорський патерн: відступи `0 16px 16px`, `radius 24`, `cubic-bezier(0.34,1.56,0.64,1)`. В Етапі 1 споживача немає; `ui/sheet.ts` перенесено з `openTabSelector` |
 | **Табло агента** | `owl/board.js` | Наш `crow/board.ts` — поведінка з донора, геометрія своя (так і має бути, §3.5) |
-| **Чіпи** | `owl/chips.js` | Перенесено частково: фільтр nav, lock від подвійного тапу. Стрілки прокрутки — свої |
+| **Чіпи** | `owl/chips.js` | Перенесено частково: фільтр nav, lock від подвійного тапу |
+| **Стрілки прокрутки чіпів** | `.owl-chips-arrow`, `style.css:1378–1394` | У донора є: `26px`, білі, рамка `1.5px`, тінь `0 2px 8px`, стоять на `left:0 / right:0` усередині стрічки. Наші `.chips-arrow` — свої: рамка `1px`, без тіні, на `-4px` за межею |
+| **Поява картки** | `.card { animation: fadeUp 0.35s ease both }`, `style.css:1543` | У нас картки з'являються без анімації |
 | **`attachSwipeDelete`** | `ui/swipe-delete.js` | Не переносили: в Етапі 1 немає списків з видаленням |
 | **Голос** | `ui/voice-input.js` | Перенесено логіку; кнопка тепер у барі донорського вигляду |
 | **Фото** | `ui/chat-image.js` | Кнопка на місці, vision іде через Hermes — його немає |
