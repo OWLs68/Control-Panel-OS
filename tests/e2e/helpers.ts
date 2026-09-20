@@ -70,11 +70,11 @@ export async function swipeY(page: Page, selector: string, fromY: number, toY: n
 
 /** A horizontal drag across the drum, as a finger would do it. */
 export async function swipeDrum(page: Page, dx: number): Promise<void> {
-  const box = await page.locator('#drum').boundingBox()
+  const box = await page.locator('#drum-capsule').boundingBox()
   if (!box) return
   const y = box.y + box.height / 2
   const from = box.x + box.width / 2
-  await touchSequence(page, '#drum', [
+  await touchSequence(page, '#drum-capsule', [
     { x: from, y },
     { x: from + dx * 0.25, y },
     { x: from + dx * 0.5, y },
@@ -94,7 +94,7 @@ export async function gotoModule(page: Page, id: string): Promise<void> {
 
   for (let attempt = 0; attempt < 6; attempt++) {
     const reachable = await page.evaluate((moduleId) => {
-      const drum = document.getElementById('drum')
+      const drum = document.getElementById('drum-capsule')
       const el = document.querySelector(`.tab-item[data-tab="${moduleId}"]`)
       if (!drum || !el) return null
       const d = drum.getBoundingClientRect()

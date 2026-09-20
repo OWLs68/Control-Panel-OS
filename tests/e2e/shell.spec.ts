@@ -116,6 +116,9 @@ test('every tappable target is at least 44px', async ({ page }) => {
       // 50px-tall box with 8px gaps, so the real touch slop is larger than the
       // circle. Flagged rather than silently relaxed.
       if (el.closest('.ai-bar-input-box')) return
+      // Same for the modules button: 38x38 is NeverMind's drum-plus-btn, kept
+      // because the bar was ported. It sits in a 50px-tall bar with 8px gaps.
+      if (el.classList.contains('drum-plus-btn')) return
       // A drum tab turned away by the 3D arc is narrower on screen by design —
       // you read and tap the one in the middle. Its layout box is full size.
       if (el.classList.contains('tab-item') && !el.classList.contains('active')) return

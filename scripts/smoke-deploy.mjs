@@ -35,8 +35,9 @@ await page.waitForSelector('body[data-ready="1"]', { timeout: 15_000 }).catch(()
 check(await page.locator('body').getAttribute('data-ready') === '1', 'the app boots and settles')
 
 check(await page.locator('#tab-bar .tab-item').count() > 0, 'the bottom bar has modules')
+check(await page.locator('.drum-capsule').isVisible(), 'the drum capsule is on screen')
 check(await page.locator('#crow-zone .crow-figure').isVisible(), 'Crow is on screen')
-check(await page.locator('#chat-input').isVisible(), 'the Crow field is present')
+check(await page.locator('#crow-input').isVisible(), 'the Crow field is present')
 
 // The image is the asset most likely to 404 behind a sub-path.
 const crowLoaded = await page.locator('.crow-figure img').evaluate(

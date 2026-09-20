@@ -716,60 +716,155 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
 }
 
 /* ── Tab bar: the drum ───────────────────────────────────────────────── */
+/*
+ * Ported from NeverMind style.css:330-462. Everything here is the donor's:
+ * the 6px/12px bar padding and blur 28, the capsule's 4px inset and 20px
+ * radius, its four inset shadows that make the groove look sunken, the 36px
+ * side gradients that fade the cylinder off at the edges, the 1px light/dark
+ * borders on each cell that read as the drum's facets, the 58px minimum item,
+ * the label that is invisible until a tab is near the centre, and the 38px
+ * dashed square next to it.
+ *
+ * Only the icons and labels are Roma OS's.
+ */
 
 #tab-bar {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
-  display: flex; align-items: center; gap: var(--sp-2);
-  padding: 7px var(--sp-3) calc(var(--safe-bottom) + 7px);
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: 6px 12px 6px;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 6px);
   background: rgba(246,240,230,0.92);
-  backdrop-filter: var(--glass-xl); -webkit-backdrop-filter: var(--glass-xl);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
   border-top: 1px solid var(--border);
+  transition: transform 0.2s ease, opacity 0.2s ease, background 0.4s ease;
   transform: translateZ(0);
-  transition: transform var(--motion-fast) var(--ease-smooth), opacity var(--motion-fast) var(--ease-smooth);
+  -webkit-transform: translateZ(0);
+  touch-action: none;          /* тільки горизонтальний JS-свайп для барабана */
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.drum {
-  flex: 1; min-width: 0; position: relative; height: 58px;
-  border-radius: var(--r-lg);
-  background: var(--bg); border: 1px solid var(--border);
+/* Капсула барабана — втоплений жолоб */
+.drum-capsule {
+  flex: 1;
+  min-width: 0;
+  background: rgba(0,0,0,0.10);
+  border: 1.5px solid rgba(255,255,255,0.45);
+  border-radius: 20px;
+  padding: 4px;
+  position: relative;
   overflow: hidden;
-  touch-action: none;   /* the drag is ours; the browser must not claim it */
   perspective: 500px;
+  box-shadow:
+    inset 0 4px 14px rgba(0,0,0,0.22),
+    inset 0 -3px 10px rgba(0,0,0,0.16),
+    inset 4px 0 14px rgba(0,0,0,0.15),
+    inset -4px 0 14px rgba(0,0,0,0.15),
+    0 2px 0 rgba(255,255,255,0.55);
 }
-.drum-track {
-  display: flex; align-items: center; height: 100%; width: max-content;
-  will-change: transform;
+/* Тіні по боках — барабан загасає до країв */
+.drum-capsule::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0; width: 36px;
+  background: linear-gradient(to right, rgba(0,0,0,0.14), transparent);
+  z-index: 5; pointer-events: none;
+  border-radius: 16px 0 0 16px;
 }
-.tab-item {
-  flex: 0 0 auto; width: 78px; height: 100%;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-  color: var(--secondary);
-  transform-style: preserve-3d;
-  transition: color var(--motion-fast) var(--ease-smooth), opacity var(--motion-fast);
-  opacity: 0.55;
+.drum-capsule::after {
+  content: '';
+  position: absolute;
+  right: 0; top: 0; bottom: 0; width: 36px;
+  background: linear-gradient(to left, rgba(0,0,0,0.14), transparent);
+  z-index: 5; pointer-events: none;
+  border-radius: 0 16px 16px 0;
 }
-.tab-item svg { width: 20px; height: 20px; }
-.tab-item span { font-size: 9.5px; font-weight: 700; letter-spacing: 0.01em; }
-.tab-item.near { opacity: 0.8; }
-.tab-item.far  { opacity: 0.65; }
-.tab-item.active { color: var(--amber); opacity: 1; }
-.tab-item.active span { font-weight: 800; }
-.drum-fade {
-  position: absolute; top: 0; bottom: 0; width: 24px; z-index: 3;
-  pointer-events: none; opacity: 0; transition: opacity var(--motion-fast);
-}
-.drum-fade.visible { opacity: 1; }
-.drum-fade-left  { left: 0;  background: linear-gradient(90deg, var(--bg), transparent); }
-.drum-fade-right { right: 0; background: linear-gradient(270deg, var(--bg), transparent); }
 
-.mods-btn {
-  width: 56px; height: 58px; flex-shrink: 0; border-radius: var(--r-lg);
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-  background: var(--primary); color: #fff;
-  box-shadow: 0 4px 14px rgba(38,42,47,0.22);
+.drum-track {
+  display: flex;
+  gap: 2px;
+  transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
+  position: relative; z-index: 2;
+  width: max-content;
 }
-.mods-btn svg { width: 19px; height: 19px; }
-.mods-btn span { font-size: 9.5px; font-weight: 700; }
+
+.tab-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 5px 12px;
+  border-radius: 14px;
+  min-width: 58px;
+  flex-shrink: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.3s cubic-bezier(0.32,0.72,0,1);
+  opacity: 0.55;
+  /* transform керується через JS для 3D-ефекту барабана */
+  /* Клітинки з обох боків — ефект циліндра */
+  border-left: 1px solid rgba(255,255,255,0.18);
+  border-right: 1px solid rgba(0,0,0,0.10);
+}
+.tab-item.far  { opacity: 0.7; }
+.tab-item.near { opacity: 0.88; }
+.tab-item.active {
+  background: white;
+  box-shadow:
+    0 4px 16px rgba(0,0,0,0.24),
+    0 1px 0 rgba(255,255,255,0.95),
+    inset 0 1px 0 rgba(255,255,255,0.9);
+  opacity: 1;
+  border-left-color: transparent;
+  border-right-color: transparent;
+}
+
+.tab-icon {
+  width: 18px; height: 18px;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(38,42,47,0.65);
+}
+.tab-icon svg { width: 17px; height: 17px; }
+.tab-item.near .tab-icon   { color: rgba(38,42,47,0.8); }
+.tab-item.active .tab-icon { color: var(--amber); }
+
+/* Підпис невидимий, поки вкладка далеко від центра */
+.tab-label {
+  font-size: 9px; font-weight: 700;
+  color: rgba(38,42,47,0.65);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.25s, font-size 0.25s, font-weight 0.25s;
+}
+.tab-item.far .tab-label  { opacity: 0.45; font-size: 8px; }
+.tab-item.near .tab-label { opacity: 0.7; }
+.tab-item.active .tab-label {
+  opacity: 1;
+  color: var(--amber);
+  font-weight: 800;
+}
+
+/* Кнопка модулів — геометрія донорської «+», іконка Roma OS */
+.drum-plus-btn {
+  width: 38px; height: 38px;
+  border-radius: 13px;
+  background: rgba(255,255,255,0.25);
+  border: 1.5px dashed rgba(255,255,255,0.5);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.2s;
+  color: rgba(38,42,47,0.55);
+}
+.drum-plus-btn svg { width: 17px; height: 17px; }
+.drum-plus-btn:active { transform: scale(0.9); }
+
+/* Під час перетягування CSS-перехід заважає — лишаємо тільки opacity */
+.drum-capsule.drum-dragging .tab-item { transition: opacity 0.1s !important; }
 
 /* ── Sheets and modals ───────────────────────────────────────────────── */
 
