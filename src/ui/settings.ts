@@ -60,13 +60,15 @@ export function setupSettings(): void {
 }
 
 export function openSettings(): void {
-  modal = openCardModal({
+  // A second open while the first is still fading out replaces its nodes;
+  // the first one's onClose then fires later and must not drop the new handle.
+  const handle = openCardModal({
     id: MODAL_ID,
     body: `
       <div class="settings-handle"></div>
       <div class="settings-title">Налаштування</div>
       <div class="settings-version">Roma OS · ${escapeHtml(deployLabel().split(' · ')[0])}</div>
-      <div class="modal-scroll settings-scroll">
+      <div class="modal-scroll">
         <div class="s-group-label">Оболонка</div>
         <div class="s-group">
           ${row({
@@ -103,8 +105,9 @@ export function openSettings(): void {
           })}
         </div>
       </div>`,
-    onClose: () => { modal = null },
+    onClose: () => { if (modal === handle) modal = null },
   })
+  modal = handle
 }
 
 function close(): void {
