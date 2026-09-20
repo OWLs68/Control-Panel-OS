@@ -21,7 +21,6 @@ const FRICTION = 0.88
 const MIN_VELOCITY = 0.5     // px/frame — below this the coast is over
 const RUBBER = 0.25          // how much of an over-drag survives at the ends
 const TAP_SLOP = 8           // px of movement still counted as a tap
-const ITEM_WIDTH = 78        // keep in step with .tab-item in style.css
 
 let capsule: HTMLElement | null = null
 let track: HTMLElement | null = null
@@ -39,18 +38,17 @@ let suppressReposition = false
 
 export function setupDrum(container: HTMLElement, pick: (id: string) => void): void {
   onPick = pick
+  // NeverMind index.html:816-825 — a capsule holding the track, and a separate
+  // square button beside it. Only the button's icon is ours.
   container.innerHTML = `
-    <div class="drum" id="drum">
+    <div class="drum-capsule" id="drum-capsule">
       <div class="drum-track" id="drum-track"></div>
-      <div class="drum-fade drum-fade-left" id="drum-fade-left"></div>
-      <div class="drum-fade drum-fade-right" id="drum-fade-right"></div>
     </div>
-    <button class="mods-btn" data-action="open-modules" aria-label="Модулі">
+    <div class="drum-plus-btn" data-action="open-modules" role="button" tabindex="0" aria-label="Модулі">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg>
-      <span>Модулі</span>
-    </button>`
+    </div>`
 
-  capsule = $('#drum', container)
+  capsule = $('#drum-capsule', container)
   track = $('#drum-track', container)
   if (!capsule || !track) return
 
@@ -58,9 +56,8 @@ export function setupDrum(container: HTMLElement, pick: (id: string) => void): v
 
   // The capsule's width is not final at first layout — the bar settles once the
   // safe-area insets resolve and again when the web fonts land, and padding
-  // computed against the old width leaves the active tab ~11px off centre with
-  // nothing to correct it. Observing the element covers all of those, plus
-  // rotation, with one mechanism instead of three guesses about timing.
+  // computed against the old width leaves the active tab off centre with
+  // nothing to correct it.
   if (typeof ResizeObserver !== 'undefined') {
     let lastWidth = 0
     new ResizeObserver(() => {
@@ -82,16 +79,17 @@ export function rebuildDrum(activeId: string): void {
   currentId = activeId
   const ids = getEnabledModuleIds()
 
+  // nav.js:353 — a div per tab, icon over label. Not a <button>: the donor's
+  // global press-scale must not fire on a drum cell.
   track.innerHTML = ids.map((id) => {
     const mod = getModule(id)
     if (!mod) return ''
-    return `<button class="tab-item${id === activeId ? ' active' : ''}" data-tab="${escapeHtml(id)}">
-      ${mod.icon}<span>${escapeHtml(mod.label)}</span>
-    </button>`
+    return `<div class="tab-item${id === activeId ? ' active' : ''}" data-tab="${escapeHtml(id)}" role="button" tabindex="0">
+      <span class="tab-icon">${mod.icon}</span>
+      <span class="tab-label">${escapeHtml(mod.label)}</span>
+    </div>`
   }).join('')
 
-  // Half-capsule padding on both sides is what lets the first and last item
-  // reach the centre; without it they stop short and the snap looks broken.
   requestAnimationFrame(() => applyPadding(activeId, true))
 }
 
@@ -99,13 +97,15 @@ function applyPadding(activeId: string, skipAnimation = false): void {
   if (!track || !capsule) return
   // Kill any transition FIRST. Resetting the transform while one is still
   // running means the next getBoundingClientRect reads a mid-animation
-  // position, and the drum settles ~11px off centre.
+  // position, and the drum settles off centre.
   track.style.transition = 'none'
 
+  // nav.js:441 — a full half-capsule on each side, so the first and last tab
+  // can still reach the middle. The centring itself is done by snapXFor.
   const half = Math.floor(capsule.offsetWidth / 2)
   if (half > 0) {
-    track.style.paddingLeft = `${half - ITEM_WIDTH / 2}px`
-    track.style.paddingRight = `${half - ITEM_WIDTH / 2}px`
+    track.style.paddingLeft = `${half}px`
+    track.style.paddingRight = `${half}px`
   }
   setTX(0)
   void track.offsetWidth   // force the reset to land before anything is measured
@@ -171,19 +171,6 @@ function applyDrum3D(): void {
       : item.classList.contains('far') ? 0.93 : 0.87
     item.style.transform = `perspective(${PERSPECTIVE}px) rotateY(${angle.toFixed(1)}deg) scale(${scale})`
   }
-  updateFades()
-}
-
-function updateFades(): void {
-  const list = items()
-  const first = list[0]
-  const last = list[list.length - 1]
-  if (!capsule || !first || !last) return
-  const cc = capsule.getBoundingClientRect()
-  const left = $('#drum-fade-left')
-  const right = $('#drum-fade-right')
-  left?.classList.toggle('visible', first.getBoundingClientRect().left < cc.left - 2)
-  right?.classList.toggle('visible', last.getBoundingClientRect().right > cc.right + 2)
 }
 
 function updateVisuals(centreItem: HTMLElement | null): void {
@@ -266,6 +253,7 @@ function attachGestures(node: HTMLElement): void {
   node.addEventListener('touchstart', (e) => {
     const touch = e.touches[0]
     if (!touch || !track) return
+    node.classList.add('drum-dragging')
     if (rafId) { cancelAnimationFrame(rafId); rafId = null }
     track.style.transition = 'none'
     // Read the live position out of the DOM: the track may be mid-transition,
@@ -299,6 +287,7 @@ function attachGestures(node: HTMLElement): void {
   }, { passive: true })
 
   node.addEventListener('touchend', () => {
+    node.classList.remove('drum-dragging')
     if (!dragging) return
     dragging = false
     if (Math.abs(tx - startTX) < 5) return   // that was a tap; let click handle it
