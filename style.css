@@ -233,9 +233,22 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
   padding: 4px 9px; font-size: var(--fs-xs); font-weight: 700; white-space: nowrap;
 }
 .crow-bubble-meta svg { width: 12px; height: 12px; color: var(--amber); }
-.crow-bubble-text { font-size: 13.5px; line-height: 1.42; color: rgba(255,255,255,0.93); }
+.crow-bubble-text {
+  font-size: 13.5px; line-height: 1.42; color: rgba(255,255,255,0.93);
+  /* Always three lines' worth, and never more than three: the board is the
+     same size on every tab, so the figure, the chips and the screen under
+     them do not jump when one greeting is shorter than another (Roman,
+     20.09). NeverMind clamps its text the same way, at four lines
+     (.owl-speech-text). */
+  min-height: calc(3 * 1.42em);
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
 .crow-bubble-text.is-fading { opacity: 0; }
-.crow-bubble-time { margin-top: 5px; font-size: var(--fs-xs); color: rgba(255,255,255,0.45); font-weight: 600; }
+/* The stale mark sits in the bubble's bottom padding, so its arrival moves nothing. */
+.crow-bubble-time {
+  position: absolute; right: 15px; bottom: 3px;
+  font-size: 10px; line-height: 1; font-weight: 600; color: rgba(255,255,255,0.45);
+}
 
 /* Priority.
    NeverMind repaints its whole board for urgency, which works there because the

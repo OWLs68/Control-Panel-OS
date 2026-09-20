@@ -141,6 +141,22 @@ test('collapsing gives the screen its space back', async ({ page }) => {
     .toBeGreaterThan(before?.height ?? 0)
 })
 
+test('the board is the same size on every module, so nothing under it jumps', async ({ page }) => {
+  // Greetings differ in length; the bubble always holds three lines' worth,
+  // the figure is fitted to the bubble, and the zone is measured from both.
+  const sizes: Record<string, string> = {}
+  for (const id of ['control', 'agents', 'projects', 'events']) {
+    await gotoModule(page, id)
+    await page.waitForTimeout(250)   // the greeting's cross-fade
+    sizes[id] = await page.evaluate(() => {
+      const h = (sel: string) => (document.querySelector(sel) as HTMLElement).offsetHeight
+      return `zone ${h('#crow-zone')} bubble ${h('#crow-bubble')} figure ${h('.crow-figure')}`
+    })
+  }
+  const distinct = new Set(Object.values(sizes))
+  expect(distinct.size, JSON.stringify(sizes)).toBe(1)
+})
+
 test('the input is present on every module', async ({ page }) => {
   for (const id of ['control', 'agents', 'projects', 'events']) {
     await gotoModule(page, id)
