@@ -39,22 +39,50 @@ function getSpeechCtor(): SpeechCtor | null {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null
 }
 
+/** Set to 'off' by the switch in the settings; absent means on. */
+const PREF_KEY = 'roma_voice'
+
 let recognition: SpeechRecognitionLike | null = null
 let baseText = ''
 let silenceTimer: number | null = null
+let available = false
+let micButton: HTMLElement | null = null
 
 export function setupVoiceInput(): void {
   const ctor = getSpeechCtor()
-  const button = $('#crow-mic-btn')
-  if (!button) return
+  micButton = $('#crow-mic-btn')
+  if (!micButton) return
   // No API, no button. A dead microphone is worse than none.
-  if (!ctor) { button.hidden = true; return }
-  button.hidden = false
+  available = !!ctor
+  syncButton()
+  if (!ctor) return
 
+  const button = micButton
   reg('crow-voice', () => {
     if (recognition) { stop(); return }
     start(ctor, button)
   })
+}
+
+/** Whether this browser has a Speech API at all — the settings row says so. */
+export function isVoiceAvailable(): boolean { return available }
+
+export function isVoiceEnabled(): boolean {
+  try { return localStorage.getItem(PREF_KEY) !== 'off' } catch { return true }
+}
+
+/** The settings switch: off hides the microphone and ends a take in progress. */
+export function setVoiceEnabled(on: boolean): void {
+  try {
+    if (on) localStorage.removeItem(PREF_KEY)
+    else localStorage.setItem(PREF_KEY, 'off')
+  } catch { /* private mode: the switch still works for this visit */ }
+  if (!on) stop()
+  syncButton()
+}
+
+function syncButton(): void {
+  if (micButton) micButton.hidden = !available || !isVoiceEnabled()
 }
 
 function start(ctor: SpeechCtor, button: HTMLElement): void {

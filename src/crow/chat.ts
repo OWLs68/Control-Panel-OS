@@ -385,6 +385,26 @@ export function loadHistory(): CrowTurn[] {
   } catch { return [] }
 }
 
+/** How many turns are saved — the settings row shows the number. */
+export function historyLength(): number { return loadHistory().length }
+
+/**
+ * Settings → «Очистити історію чату». Storage and the window; the draft in
+ * the field stays, as it does across every other close (core.js:947).
+ */
+export function clearHistory(): void {
+  try { localStorage.removeItem(HISTORY_KEY) } catch { /* private mode */ }
+  lastUserMsgTs = 0
+  clearUnreadBadge()
+  const list = $('#crow-chat-messages')
+  if (!list) return
+  hideTyping()
+  list.querySelectorAll('.chat-chips-row').forEach((n) => n.remove())
+  list.innerHTML = ''
+  delete list.dataset.restored
+  restoreChatUI()
+}
+
 function saveHistory(turns: CrowTurn[]): void {
   try { localStorage.setItem(HISTORY_KEY, JSON.stringify(turns.slice(-MAX_HISTORY))) } catch { /* quota */ }
 }

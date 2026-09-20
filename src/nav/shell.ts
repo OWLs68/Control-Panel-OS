@@ -50,22 +50,15 @@ export function setupShell(): void {
   setupChat(chipHandlers)
   setupDrum(tabBar, (id) => switchModule(id))
 
-  reg('open-modules', () => {
-    openModuleSheet((ids) => {
-      rebuildDrum(getActiveModuleId())
-      // If the module you were standing on has just been hidden, land on home
-      // rather than leave the user on a screen with no way back to it.
-      if (!ids.includes(getActiveModuleId())) switchModule(HOME_MODULE_ID)
-    })
-  })
+  reg('open-modules', openModules)
 
   // Anything on a screen that points at a module — a metric tile, a node on
   // the system map, a row in «Стан системи» — goes through one action.
   reg('open-module', (data) => { if (data.module) switchModule(data.module) })
 
-  // The top bar. Crow is the search and the way to add things, so both open
-  // the chat; the bell is the system's own feed.
-  reg('open-search', () => openChatWithFocus())
+  // The top bar. Crow is the way to add things, so «+» opens the chat; the
+  // bell is the system's own feed. The gear (ui/settings.ts) took the
+  // magnifier's place: search already opens the chat (Roman, 21.09).
   reg('open-add', () => openChatWithFocus('Додай '))
   reg('open-notifications', () => {
     switchModule('events')
@@ -104,6 +97,16 @@ export function setupShell(): void {
 
   rebuildDrum(HOME_MODULE_ID)
   switchModule(HOME_MODULE_ID, true)
+}
+
+/** The modules sheet, from the drum's button or from the settings. */
+export function openModules(): void {
+  openModuleSheet((ids) => {
+    rebuildDrum(getActiveModuleId())
+    // If the module you were standing on has just been hidden, land on home
+    // rather than leave the user on a screen with no way back to it.
+    if (!ids.includes(getActiveModuleId())) switchModule(HOME_MODULE_ID)
+  })
 }
 
 export function switchModule(id: string, force = false): void {

@@ -113,7 +113,7 @@ button, [data-action] { transition: transform var(--motion-normal) var(--ease-sp
    a sheet root used to scale the whole sheet on iOS. */
 #tab-bar:active, .sheet:active, .sheet-root:active, .screen:active,
 #crow-zone:active, .ai-bar-new:active, .ai-bar-input-box:active,
-.ai-bar-chat-window:active { transform: none; }
+.ai-bar-chat-window:active, .modal-root:active, .modal-card:active { transform: none; }
 
 button { font: inherit; color: inherit; border: none; background: none; cursor: pointer; }
 
@@ -1062,6 +1062,105 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
   -webkit-tap-highlight-color: transparent;
 }
 .mod-order-move[disabled] { opacity: 0.25; pointer-events: none; }
+
+/* ── Card modal + settings ───────────────────────────────────────────── */
+/* NeverMind's second modal pattern: the settings panel (index.html:1256–1258,
+   style.css:469–571) and the calendar modal share it — DESIGN_SYSTEM.md
+   «ЕТАЛОН calendar-modal». Dim layer as a top-level sibling, root pinned to
+   the bottom with 16px around it, a glass card that pops in with scale(0→1).
+   Inline styles moved into classes, the numbers untouched. Our own: the
+   palette — rgba(30,16,64,x) → rgba(38,42,47,x), #1e1040 → #202326, the
+   green toggle → amber, the per-row icon tints → amber-soft / ink-soft. */
+.modal-dim {
+  position: fixed; inset: 0; z-index: 199;
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+.modal-root {
+  position: fixed; inset: 0; z-index: 200;
+  display: flex; align-items: flex-end; justify-content: center;
+  padding: 0 16px 16px;
+}
+.modal-card {
+  position: relative; width: 100%; max-width: 480px; max-height: 85vh;
+  background: rgba(255,255,255,0.30);
+  backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px);
+  border-radius: 24px; overflow: hidden;
+  border: 1.5px solid rgba(255,255,255,0.5);
+  padding: 12px 0 0;
+  transform: scale(0); opacity: 0;
+  transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s ease;
+}
+.modal-card.open { transform: scale(1); opacity: 1; }
+/* The scroller (.settings-scroll in the donor). Its max-height is 85vh less
+   the handle, title, version and the card's top padding — 78px. Overscroll
+   none, never contain (UvEHE 03.05); no mask-image — with the card's blur it
+   re-rasterises every frame on iOS and the panel visibly squashes. */
+.modal-scroll {
+  overflow-y: auto; max-height: calc(85vh - 78px);
+  padding-top: 20px; padding-bottom: calc(var(--safe-bottom) + 40px);
+  -webkit-overflow-scrolling: touch; overscroll-behavior: none;
+  scrollbar-width: none;
+}
+.modal-scroll::-webkit-scrollbar { display: none; }
+.settings-handle { width: 36px; height: 4px; background: rgba(38,42,47,0.15); border-radius: 2px; margin: 0 auto 12px; }
+.settings-title {
+  font-family: var(--font-d); font-size: 17px; font-weight: 800;   /* donor 900; Bricolage is loaded up to 800 */
+  line-height: 1.1; color: #202326; text-align: center;
+  padding: 0 20px; margin-bottom: 4px; letter-spacing: -0.3px;
+}
+.settings-version { font-size: 12px; line-height: 1.1; color: rgba(38,42,47,0.35); text-align: center; margin-bottom: 16px; }
+/* Groups are solid, not glass — one blur per stack, and the card has it. */
+.s-group {
+  margin: 0 14px 10px;
+  background: rgba(255,255,255,0.92);
+  border-radius: 18px; border: 1.5px solid rgba(255,255,255,0.75); overflow: hidden;
+}
+/* The donor writes the label's padding inline: 10px 14px 4px for the first,
+   4px 14px for the rest. */
+.s-group-label {
+  font-size: 11px; font-weight: 700; color: rgba(38,42,47,0.35);
+  text-transform: uppercase; letter-spacing: 0.09em; padding: 4px 14px;
+}
+.s-group-label:first-child { padding-top: 10px; }
+/* A row is a <button> where it does something (keyboard-reachable, same
+   geometry as the donor's div) and a div where it only shows a value. */
+.s-row {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; text-align: left;
+  padding: 12px 14px; min-height: 52px;
+  border-bottom: 1px solid rgba(38,42,47,0.06);
+}
+.s-row:last-child { border-bottom: none; }
+.s-row-static { cursor: default; }
+.s-row[disabled] { opacity: 0.5; cursor: default; }
+.s-row-left { display: flex; align-items: center; gap: 11px; flex: 1; min-width: 0; }
+.s-icon {
+  width: 32px; height: 32px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.s-icon svg { width: 17px; height: 17px; }
+.s-icon-amber { background: var(--amber-soft); color: #8a5810; }
+.s-icon-ink { background: rgba(38,42,47,0.06); color: rgba(38,42,47,0.5); }
+.s-row-text { min-width: 0; }
+.s-row-title { font-size: 15px; font-weight: 600; color: #202326; line-height: 1.3; }
+.s-row-sub { font-size: 12px; color: rgba(38,42,47,0.42); margin-top: 1px; }
+.s-chevron { flex-shrink: 0; margin-left: 8px; opacity: 0.3; }
+.s-value { font-size: 13px; color: rgba(38,42,47,0.4); margin-right: 4px; flex-shrink: 0; }
+.s-toggle {
+  width: 40px; height: 22px; border-radius: 11px;
+  background: rgba(38,42,47,0.12); position: relative; flex-shrink: 0;
+  transition: background 0.2s;
+}
+.s-toggle.on { background: var(--amber); }
+.s-toggle-thumb {
+  width: 18px; height: 18px; border-radius: 50%; background: white;
+  position: absolute; top: 2px; left: 2px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+  transition: left 0.2s;
+}
+.s-toggle.on .s-toggle-thumb { left: 20px; }
 
 /* ── Toast ───────────────────────────────────────────────────────────── */
 
