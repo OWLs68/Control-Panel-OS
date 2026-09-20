@@ -60,11 +60,62 @@ test('the bar stays pinned to the bottom while the screen scrolls under it', asy
 })
 
 test('the measured bar height reaches the CSS variable', async ({ page }) => {
-  const value = await page.evaluate(() =>
-    getComputedStyle(document.documentElement).getPropertyValue('--tabbar-h').trim())
+  const { value, real } = await page.evaluate(() => ({
+    value: getComputedStyle(document.documentElement).getPropertyValue('--tabbar-h').trim(),
+    real: (document.getElementById('tab-bar') as HTMLElement).offsetHeight,
+  }))
   const px = parseInt(value, 10)
   expect(px).toBeGreaterThan(50)   // an unmeasured, empty bar reads about 15px
-  expect(px).toBeLessThan(140)
+  expect(px).toBe(real)            // measured, not the 78px default
+})
+
+test('the bar is re-measured when it grows after boot, and the input box stays above it', async ({ page }) => {
+  // ISS-002: on the phone the bar grows late (safe area, font swap) and the
+  // input box ended up under it. Let boot's 500ms fallback measurement pass
+  // first, then grow the bar by padding alone — only the observer can catch
+  // that — and see the variable follow.
+  await page.waitForTimeout(800)
+  await page.addStyleTag({ content: '#tab-bar { padding-bottom: 40px !important; }' })
+  await expect.poll(() => page.evaluate(() => {
+    const value = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tabbar-h'), 10)
+    const real = (document.getElementById('tab-bar') as HTMLElement).offsetHeight
+    return real - value
+  }), { timeout: 2000 }).toBe(0)
+
+  await page.waitForTimeout(400)   // the bar's `bottom` transition
+  const box = await page.locator('.ai-bar-input-box').boundingBox()
+  const bar = await page.locator('#tab-bar').boundingBox()
+  expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThanOrEqual((bar?.y ?? 0) - 3)
+})
+
+test('a screen ends just under its content, not half a screen lower', async ({ page }) => {
+  // ISS-003: the dock is the input box, not the whole bar with the hidden chat.
+  const dock = await page.evaluate(() =>
+    parseInt(getComputedStyle(document.documentElement).getPropertyValue('--dock-h'), 10))
+  expect(dock).toBeLessThan(100)
+
+  await gotoModule(page, 'events')
+  const gap = await page.evaluate(() => {
+    const s = document.querySelector('.screen.active') as HTMLElement
+    s.scrollTop = s.scrollHeight
+    let lowest = 0
+    s.querySelectorAll('*').forEach((e) => { const b = e.getBoundingClientRect(); if (b.height && b.bottom > lowest) lowest = b.bottom })
+    const box = (document.querySelector('.ai-bar-input-box') as HTMLElement).getBoundingClientRect()
+    return box.top - lowest
+  })
+  // The last element's own margin sits in the gap too; what matters is that
+  // it is a breath, not the ~250px hole of ISS-003.
+  expect(gap).toBeGreaterThanOrEqual(0)
+  expect(gap).toBeLessThan(80)
+})
+
+test('a screen keeps its scroll position while you visit another module', async ({ page }) => {
+  // ISS-005 — as in NeverMind, where switchTab resets nothing.
+  await gotoModule(page, 'projects')
+  await page.locator('#screen-projects').evaluate((el) => { el.scrollTop = 150 })
+  await gotoModule(page, 'events')
+  await gotoModule(page, 'projects')
+  expect(await page.locator('#screen-projects').evaluate((el) => el.scrollTop)).toBeGreaterThan(100)
 })
 
 test('nothing spills off the 390px screen', async ({ page }) => {
@@ -111,6 +162,10 @@ test('every tappable target is at least 44px', async ({ page }) => {
       const r = el.getBoundingClientRect()
       if (r.width === 0 || r.height === 0) return
       if (el.classList.contains('chips-arrow')) return
+      // NeverMind's chips are 12px text with 7px padding — about 31px tall.
+      // Ported as they are (Roman, 20.09), so flagged here like the bar's
+      // 32px buttons rather than silently relaxing the threshold.
+      if (el.classList.contains('chip')) return
       // The bar's photo, mic and send buttons are 32px — NeverMind's own value,
       // kept because the bar was ported rather than rebuilt. They sit inside a
       // 50px-tall box with 8px gaps, so the real touch slop is larger than the

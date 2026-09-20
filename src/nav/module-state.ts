@@ -38,11 +38,15 @@ export function isEnabled(id: string): boolean {
   return getEnabledModuleIds().includes(id)
 }
 
-/** Order inside the bar; ids not present keep the registry's own order. */
+/**
+ * Order inside the bar; ids not present keep the registry's own order.
+ * Nothing moves in front of the first slot — the home module keeps it
+ * (NeverMind `moveTabOrder`, nav.js:397: `newIdx < 1` is refused).
+ */
 export function moveModule(ids: string[], id: string, direction: -1 | 1): string[] {
   const at = ids.indexOf(id)
   const to = at + direction
-  if (at < 0 || to < 0 || to >= ids.length) return ids
+  if (at < 0 || to < 1 || to >= ids.length) return ids
   const next = [...ids]
   const [moved] = next.splice(at, 1)
   next.splice(to, 0, moved as string)

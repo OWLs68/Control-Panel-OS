@@ -49,7 +49,10 @@ export function row(opts: RowOptions): string {
   </${tag}>`
 }
 
-export function metric(value: number | string, label: string, icon: IconName, tone: Tone): string {
+export interface MetricTap { action: string; data?: Record<string, string> }
+
+/** A tile; with `tap` it is a <button> that opens whatever owns the number. */
+export function metric(value: number | string, label: string, icon: IconName, tone: Tone, tap?: MetricTap): string {
   const bg: Record<Tone, string> = {
     neutral: 'var(--ink-soft)', success: 'var(--success-soft)', warning: 'var(--warning-soft)',
     error: 'var(--error-soft)', info: 'var(--info-soft)', amber: 'var(--amber-soft)',
@@ -58,11 +61,17 @@ export function metric(value: number | string, label: string, icon: IconName, to
     neutral: 'var(--secondary)', success: 'var(--success)', warning: 'var(--warning)',
     error: 'var(--error)', info: 'var(--info)', amber: 'var(--amber)',
   }
-  return `<div class="metric">
+  const tag = tap ? 'button' : 'div'
+  const attrs = tap
+    ? ` data-action="${escapeHtml(tap.action)}"` +
+      Object.entries(tap.data ?? {}).map(([k, v]) => ` data-${k}="${escapeHtml(v)}"`).join('')
+    : ''
+  // Spans, not divs: the tile may be a <button>, and they take their own line via CSS.
+  return `<${tag} class="metric"${attrs}>
     <span class="metric-ico" style="background:${bg[tone]};color:${fg[tone]}">${icons[icon]}</span>
-    <div class="metric-num">${escapeHtml(value)}</div>
-    <div class="metric-lbl">${escapeHtml(label)}</div>
-  </div>`
+    <span class="metric-num">${escapeHtml(value)}</span>
+    <span class="metric-lbl">${escapeHtml(label)}</span>
+  </${tag}>`
 }
 
 export function progress(percent: number): string {
