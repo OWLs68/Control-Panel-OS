@@ -396,6 +396,19 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
   border-radius: var(--r-lg); box-shadow: var(--shadow); overflow: hidden;
 }
 .card + .card { margin-top: var(--sp-3); }
+/* A card fades up as it appears — NeverMind style.css:1506–1509 and 1543–1546,
+   as they are: 12px rise over 0.35s, `both` so it holds the end state, and the
+   second, third and fourth CHILD (not card — the selector counts every
+   sibling) each 50ms later. It replays on every render, and a screen renders
+   on every switch, exactly as the donor's tabs do. */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.card { animation: fadeUp 0.35s ease both; }
+.card:nth-child(2) { animation-delay: 0.05s; }
+.card:nth-child(3) { animation-delay: 0.10s; }
+.card:nth-child(4) { animation-delay: 0.15s; }
 .card-head {
   display: flex; align-items: center; gap: var(--sp-2);
   padding: 13px var(--sp-4); border-bottom: 1px solid var(--ink-line);
