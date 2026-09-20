@@ -125,6 +125,38 @@ test('the version badge says which build this is, and opens the deploy info', as
   await expect(page.locator('[data-action="hard-refresh"]')).toBeVisible()
 })
 
+test('cards fade up as a screen renders, and hold their end state', async ({ page }) => {
+  // NeverMind's fadeUp: 0.35s ease, fill both, 12px rise; replayed on every render.
+  await gotoModule(page, 'projects')
+  const cards = page.locator('#screen-projects .card')
+  await expect(cards.first()).toBeVisible()
+  const anim = await cards.first().evaluate((el) => {
+    const cs = getComputedStyle(el)
+    return [cs.animationName, cs.animationDuration, cs.animationTimingFunction, cs.animationFillMode].join(' ')
+  })
+  expect(anim).toBe('fadeUp 0.35s ease both')
+  // Once the animation has run, the card is fully there — no stuck opacity, no offset.
+  await expect.poll(() => cards.first().evaluate((el) => {
+    const cs = getComputedStyle(el)
+    return `${cs.opacity} ${cs.transform}`
+  })).toBe('1 matrix(1, 0, 0, 1, 0, 0)')
+  // The keyframes are the donor's numbers.
+  const frames = await page.evaluate(() => {
+    for (const sheet of Array.from(document.styleSheets)) {
+      // The Google Fonts sheet is cross-origin and refuses to list its rules.
+      let rules: CSSRule[]
+      try { rules = Array.from(sheet.cssRules) } catch { continue }
+      for (const rule of rules) {
+        if (rule instanceof CSSKeyframesRule && rule.name === 'fadeUp') {
+          return Array.from(rule.cssRules).map((k) => (k as CSSKeyframeRule).keyText + ' ' + (k as CSSKeyframeRule).style.cssText).join(' | ')
+        }
+      }
+    }
+    return ''
+  })
+  expect(frames).toBe('0% opacity: 0; transform: translateY(12px); | 100% opacity: 1; transform: translateY(0px);')
+})
+
 test('a screen keeps its scroll position while you visit another module', async ({ page }) => {
   // ISS-005 — as in NeverMind, where switchTab resets nothing.
   await gotoModule(page, 'projects')
