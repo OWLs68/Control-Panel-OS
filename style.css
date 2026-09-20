@@ -112,7 +112,8 @@ button, [data-action] { transition: transform var(--motion-normal) var(--ease-sp
 /* ...except surfaces that are their own containing block. A press bubbling up to
    a sheet root used to scale the whole sheet on iOS. */
 #tab-bar:active, .sheet:active, .sheet-root:active, .screen:active,
-#crow-zone:active, #crow-dock:active { transform: none; }
+#crow-zone:active, .ai-bar-new:active, .ai-bar-input-box:active,
+.ai-bar-chat-window:active { transform: none; }
 
 button { font: inherit; color: inherit; border: none; background: none; cursor: pointer; }
 
@@ -442,123 +443,276 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
 }
 
 /* ── Crow dock: the one chat ─────────────────────────────────────────── */
+/*
+ * Ported from NeverMind, not rebuilt: style.css:929-1112, 1196-1213, 1480-1482,
+ * 1658-1690. Every geometry number here — the 4px side inset, the 18/18/10/10
+ * radius, blur 16, the 110% slide-out, the 40px-tall handle zone, the 48px
+ * bottom padding under the chips — is the donor's value. The only substitution
+ * is the palette: NeverMind's near-black-violet rgba(15,10,22,x) becomes
+ * Graphite rgba(38,42,47,x), and its #1e1040 ink becomes #202326.
+ *
+ * Do not "tidy" the odd-looking bits. The missing mask-image on .ai-bar-messages
+ * and the translateZ(0) on .chat-chips-row are both fixes for iOS clipping the
+ * last child under a blurred ancestor (incident UvEHE 03.05); the 40px handle
+ * zone is B-89.
+ */
 
-#crow-dock {
-  position: fixed; left: 0; right: 0; z-index: 60;
-  bottom: calc(var(--tabbar-h) + 4px);
-  padding: 0 var(--sp-3);
-  transition: bottom var(--motion-fast) var(--ease-smooth);
+.ai-bar-new {
+  position: fixed;
+  left: 4px; right: 4px;
+  bottom: calc(var(--tabbar-h, 83px) + 4px);
+  z-index: 99;
+  display: flex;
+  flex-direction: column;
+  transition: bottom 0.35s cubic-bezier(0.32,0.72,0,1);
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  pointer-events: none;            /* сам бар прозорий для дотиків */
+  touch-action: none;              /* блокуємо будь-який свайп на бар */
+}
+/* тільки поле вводу і вікно чату перехоплюють дотики */
+.ai-bar-new .ai-bar-input-box,
+.ai-bar-new .ai-bar-chat-window.open { pointer-events: all; }
+.ai-bar-new textarea { touch-action: manipulation; }
+.ai-bar-new .ai-bar-messages { touch-action: pan-y; }
+
+/* Поле вводу — завжди видиме.
+   Верхні кути більші (вільні), нижні менші (з'єднуються з панеллю). */
+.ai-bar-input-box {
+  position: relative;
+  background: rgba(38,42,47,0.72);
+  border-radius: 18px 18px 10px 10px;
+  border: 1px solid rgba(255,255,255,0.12);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.10);
+  display: flex;
+  align-items: flex-end;           /* кнопки знизу, поруч з останнім рядком */
+  gap: 8px;
+  padding: 8px 8px 8px 14px;
+  cursor: text;
+}
+.ai-bar-input-box textarea {
+  flex: 1;
+  border: none; outline: none;
+  font-size: 15px; font-family: inherit;
+  color: white; background: transparent;
+  resize: none; line-height: 1.45;
+  max-height: 50svh;               /* до половини екрана */
+  overflow-y: auto;
+  scrollbar-width: none;
+  align-self: auto;
+}
+.ai-bar-input-box textarea::placeholder { color: rgba(255,255,255,0.45); }
+.ai-bar-input-box textarea::-webkit-scrollbar { display: none; }
+
+.ai-bar-icon-btn {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.12);
+  border: none;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ai-bar-icon-btn svg { width: 14px; height: 14px; stroke: rgba(255,255,255,0.55); }
+.ai-bar-send-btn {
+  position: relative;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.9);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0;
+}
+.ai-bar-send-btn svg { width: 14px; height: 14px; stroke: #202326; }
+
+.voice-btn.recording {
+  background: #C6544B !important;
+  animation: voice-pulse 1.2s ease-in-out infinite;
+}
+.voice-btn.recording svg { stroke: #fff !important; }
+@keyframes voice-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(198,84,75,0.6); }
+  50%      { box-shadow: 0 0 0 6px rgba(198,84,75,0); }
 }
 
-.chat-window {
-  display: flex; flex-direction: column;
-  height: 0; max-height: 0; opacity: 0; pointer-events: none;
-  margin-bottom: 6px; overflow: hidden;
-  background: rgba(38,42,47,0.88);
-  backdrop-filter: var(--glass-md); -webkit-backdrop-filter: var(--glass-md);
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-up);
+/* Чат-вікно — з'являється над полем */
+.ai-bar-chat-window {
+  background: rgba(38,42,47,0.72);
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  overflow: hidden;
+  margin-bottom: 4px;
+  display: flex;
+  flex-direction: column;
+  /* висота — динамічна, розраховується JS; fallback = заповнити до шапки */
+  height: calc(100svh - var(--tabbar-h, 83px) - 64px - 160px);
+  max-height: calc(100svh - var(--tabbar-h, 83px) - 64px - 160px);
+  transform: translateY(110%);
+  opacity: 0;
+  transition: transform 0.32s cubic-bezier(0.32,0.72,0,1), opacity 0.25s ease;
+  pointer-events: none;
+}
+.ai-bar-chat-window.open {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* Зона свайпу (handle) — повна ширина, ~40px під палець (B-89).
+   Візуально смужка тільки через ::after. */
+.ai-bar-chat-handle {
+  width: 100%;
+  padding: 20px 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: grab;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.ai-bar-chat-handle::after {
+  content: '';
+  display: block;
+  width: 28px; height: 4px;
+  background: rgba(255,255,255,0.45);
+  border-radius: 2px;
+}
+
+/* Підказка над полем коли чат закрито — показує що можна свайпнути вгору */
+.ai-bar-new:not(:has(.ai-bar-chat-window.open)) .ai-bar-input-box::before {
+  content: '';
+  position: absolute;
+  top: -10px; left: 50%;
+  transform: translateX(-50%);
+  width: 28px; height: 4px;
+  background: rgba(38,42,47,0.45);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+/* Повідомлення всередині чат-вікна.
+   mask-image тут свідомо НЕМАЄ: разом з backdrop-filter батька і overflow:auto
+   воно створює composite layer, який обрізає останній елемент у зоні
+   padding-bottom на iOS. Верхній fade втрачаємо — приймаємо. */
+.ai-bar-messages {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 5px 12px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  scrollbar-width: none;
+}
+.ai-bar-messages::-webkit-scrollbar { display: none; }
+
+/* Бульбашки — асиметричні кути */
+.msg-row { display: flex; }
+.msg-row-agent { gap: 8px; align-items: flex-start; }
+.msg-row-user { justify-content: flex-end; }
+.msg-bubble {
+  max-width: 85%;
+  padding: 8px 12px;
+  font-size: 15px;
+  line-height: 1.5;
+  font-weight: 500;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.msg-bubble--agent {
+  background: rgba(255,255,255,0.12); color: white;
+  border-radius: 4px 14px 14px 14px;
+}
+.msg-bubble--user {
+  background: rgba(255,255,255,0.88); color: #202326;
+  border-radius: 14px 4px 14px 14px;
+}
+
+/* Три крапки під час набору */
+.ai-typing { display: inline-flex; gap: 3px; align-items: center; padding: 2px 0; }
+.ai-typing span {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.7);
+  animation: blink 1.2s ease-in-out infinite;
+}
+.ai-typing span:nth-child(2) { animation-delay: 0.2s; }
+.ai-typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink {
+  0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+  40%           { opacity: 1;   transform: scale(1); }
+}
+
+/* Розділювачі: пауза >5 хв і межа попередньої розмови */
+.msg-sep {
+  display: flex; align-items: center; gap: 8px;
+  margin: 6px 0; opacity: 0.45;
+}
+.msg-sep-line { flex: 1; height: 1px; background: rgba(255,255,255,0.2); }
+.msg-sep-text {
+  font-size: 11px; color: rgba(255,255,255,0.6);
+  white-space: nowrap; font-weight: 500;
+}
+.msg-sep-history { margin: 4px 0 8px; opacity: 0.4; }
+.msg-sep-history .msg-sep-text {
+  font-size: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+
+/* Чіпи під бульбашкою агента.
+   flex-shrink:0 + translateZ(0) — інакше стрічку обрізає знизу під блюром. */
+.chat-chips-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 2px 6px 2px;
+  margin: 2px 0 4px 0;
+  max-width: 92%;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  flex-shrink: 0;
   transform: translateZ(0);
 }
-.chat-window.open { opacity: 1; pointer-events: auto; }
+.chat-chips-row::-webkit-scrollbar { display: none; }
+.chat-chips-row .chip {
+  flex-shrink: 0;
+  min-height: 0;
+  background: rgba(255,236,196,0.95);
+  color: #5b3d12;
+  border: 1px solid rgba(213,138,31,0.35);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.15s, background 0.15s;
+}
+.chat-chips-row .chip:active { transform: scale(0.96); }
 
-/* The handle owns the drag. Messages keep native scrolling, so the two never
-   fight — that separation is why the gesture feels solid. */
-.chat-handle {
-  flex: 0 0 auto; height: 26px;
-  display: flex; align-items: center; justify-content: center;
-  touch-action: none; cursor: grab;
-}
-.chat-handle::before {
-  content: ''; width: 38px; height: 4px; border-radius: 2px;
-  background: rgba(255,255,255,0.45);
-}
-.chat-messages {
-  flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: none;
-  -webkit-overflow-scrolling: touch;
-  padding: 2px var(--sp-3) var(--sp-3);
-  scrollbar-width: none;
-  display: flex; flex-direction: column; gap: 7px;
-}
-.chat-messages::-webkit-scrollbar { display: none; }
-/* Rest the conversation on the bottom edge, as a chat should. `margin-top:auto`
-   on the first child rather than `justify-content:flex-end`, which clips the
-   top of the list once the messages overflow. */
-.chat-messages > :first-child { margin-top: auto; }
-.msg {
-  max-width: 82%; padding: 9px 12px; font-size: 13.5px; line-height: 1.4;
-  word-wrap: break-word; white-space: pre-wrap;
-  animation: msg-in var(--motion-normal) var(--ease-spring);
-}
-@keyframes msg-in { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
-.msg-agent {
-  align-self: flex-start; border-radius: 4px 14px 14px 14px;
-  background: rgba(255,255,255,0.13); color: rgba(255,255,255,0.95);
-}
-.msg-user {
-  align-self: flex-end; border-radius: 14px 4px 14px 14px;
-  background: var(--amber); color: var(--primary); font-weight: 700;
-}
-.msg-system {
-  align-self: center; border-radius: var(--r-pill); padding: 5px 11px;
-  background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.6);
-  font-size: var(--fs-xs); font-weight: 600;
-}
-.typing { display: flex; gap: 4px; align-items: center; padding: 12px 13px; }
-.typing i {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: rgba(255,255,255,0.6); animation: typing 1.3s infinite;
-}
-.typing i:nth-child(2) { animation-delay: 0.18s }
-.typing i:nth-child(3) { animation-delay: 0.36s }
-@keyframes typing { 0%,60%,100% { opacity: 0.3; transform: translateY(0) } 30% { opacity: 1; transform: translateY(-3px) } }
-
+/* Рядок UI-контексту — цього в NeverMind немає, це вимога Roma OS:
+   видно, що саме Crow отримав про поточний екран. */
 .chat-context {
-  flex: 0 0 auto; margin: 0 var(--sp-3) 6px;
-  padding: 6px 10px; border-radius: var(--r-sm);
+  flex: 0 0 auto;
+  margin: 0 12px 4px;
+  padding: 5px 9px;
+  border-radius: 8px;
   background: rgba(255,255,255,0.08);
-  font-family: var(--font-m); font-size: 10px; line-height: 1.35;
+  font-family: var(--font-m);
+  font-size: 10px; line-height: 1.35;
   color: rgba(255,255,255,0.55);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-
-.chat-input-box {
-  position: relative;
-  display: flex; align-items: flex-end; gap: var(--sp-2);
-  padding: 8px 8px 8px var(--sp-4);
-  background: rgba(38,42,47,0.92);
-  backdrop-filter: var(--glass-md); -webkit-backdrop-filter: var(--glass-md);
-  border-radius: var(--r-xl);
-  box-shadow: var(--shadow-up);
-}
-.chat-input-box::before {
-  content: ''; position: absolute; top: 5px; left: 50%; transform: translateX(-50%);
-  width: 34px; height: 3px; border-radius: 2px; background: rgba(255,255,255,0.22);
-  opacity: 1; transition: opacity var(--motion-fast);
-}
-.chat-open .chat-input-box::before { opacity: 0; }
-.chat-input {
-  flex: 1; min-width: 0; resize: none; max-height: 96px;
-  background: none; border: none; outline: none;
-  color: #fff; font: inherit; font-size: 15px; line-height: 1.35;
-  padding: 11px 0;
-}
-.chat-input::placeholder { color: rgba(255,255,255,0.45); }
-.icon-btn {
-  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.8);
-}
-.icon-btn svg { width: 17px; height: 17px; }
-.icon-btn-send { background: var(--amber); color: #fff; }
-.icon-btn.recording { background: var(--error); color: #fff; animation: rec 1.1s infinite; }
-@keyframes rec { 0%,100% { opacity: 1 } 50% { opacity: 0.55 } }
-.unread-badge {
-  position: absolute; top: 0; right: 56px;
-  min-width: 19px; height: 19px; padding: 0 5px; border-radius: var(--r-pill);
-  display: flex; align-items: center; justify-content: center;
-  background: var(--error); color: #fff; font-size: 10.5px; font-weight: 800;
-  border: 2px solid var(--bg);
 }
 
 /* ── Tab bar: the drum ───────────────────────────────────────────────── */

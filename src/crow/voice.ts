@@ -7,7 +7,8 @@
  * that is easy to skip — the button simply does not appear when the browser has
  * no Speech API, rather than appearing and failing.
  */
-import { $, autoResize } from '../core/dom.js'
+import { $ } from '../core/dom.js'
+import { autoResizeTextarea } from './chat.js'
 import { reg } from '../core/delegation.js'
 import { showToast } from '../ui/toast.js'
 
@@ -44,7 +45,7 @@ let silenceTimer: number | null = null
 
 export function setupVoiceInput(): void {
   const ctor = getSpeechCtor()
-  const button = $('#mic-btn')
+  const button = $('#crow-mic-btn')
   if (!button) return
   // No API, no button. A dead microphone is worse than none.
   if (!ctor) { button.hidden = true; return }
@@ -57,7 +58,7 @@ export function setupVoiceInput(): void {
 }
 
 function start(ctor: SpeechCtor, button: HTMLElement): void {
-  const input = $<HTMLTextAreaElement>('#chat-input')
+  const input = $<HTMLTextAreaElement>('#crow-input')
   if (!input) return
 
   try {
@@ -89,7 +90,7 @@ function start(ctor: SpeechCtor, button: HTMLElement): void {
     }
     input.value = baseText + final + interim
     if (final) baseText = input.value
-    autoResize(input)
+    autoResizeTextarea(input)
     armSilence()
   }
 

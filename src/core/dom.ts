@@ -34,12 +34,6 @@ export function el<K extends keyof HTMLElementTagNameMap>(
   return node
 }
 
-/** Grows a textarea with its content, up to the CSS max-height. */
-export function autoResize(ta: HTMLTextAreaElement): void {
-  ta.style.height = 'auto'
-  ta.style.height = `${Math.min(ta.scrollHeight, 96)}px`
-}
-
 /** "12 хв тому" / "3 год тому" / "" while still fresh. */
 export function relativeTime(ts: number, freshMs = 10 * 60 * 1000): string {
   const age = Date.now() - ts

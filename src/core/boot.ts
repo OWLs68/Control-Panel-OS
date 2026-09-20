@@ -76,7 +76,7 @@ function measureChrome(): void {
   const root = document.documentElement
   const tabBar = document.getElementById('tab-bar')
   const topBar = document.getElementById('topbar')
-  const dock = document.getElementById('crow-dock')
+  const dock = document.getElementById('crow-ai-bar')
 
   if (tabBar?.offsetHeight) root.style.setProperty('--tabbar-h', `${tabBar.offsetHeight}px`)
   if (topBar?.offsetHeight) root.style.setProperty('--topbar-h', `${topBar.offsetHeight}px`)

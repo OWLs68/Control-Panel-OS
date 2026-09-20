@@ -23,12 +23,18 @@ export function setupKeyboardAvoiding(): void {
     // Deliberately NOT including vv.offsetTop: it grows as the page scrolls,
     // which would make the height read below the threshold and leave the bar up.
     const keyboard = Math.max(0, window.innerHeight - vv.height)
-    const dock = document.getElementById('crow-dock')
+    const bar = document.getElementById('crow-ai-bar')
     const tabBar = document.getElementById('tab-bar')
     const tabHeight = tabBar?.offsetHeight ?? 78
 
     if (keyboard > KEYBOARD_THRESHOLD) {
-      if (dock) dock.style.bottom = `${keyboard + 8}px`
+      // core keyboard.js: bar rides the keyboard, and the side inset widens
+      // from 4px to 12px while it is up.
+      if (bar) {
+        bar.style.bottom = `${keyboard + 8}px`
+        bar.style.left = '12px'
+        bar.style.right = '12px'
+      }
       if (tabBar) {
         // Far enough to clear the screen entirely, not just far enough to look gone.
         tabBar.style.transform = `translateY(${tabHeight + keyboard}px)`
@@ -39,7 +45,11 @@ export function setupKeyboardAvoiding(): void {
       if (getChatState() === 'b') collapseToA()
       else resizeToState()
     } else {
-      if (dock) dock.style.bottom = `calc(var(--tabbar-h) + 4px)`
+      if (bar) {
+        bar.style.bottom = 'calc(var(--tabbar-h, 83px) + 4px)'
+        bar.style.left = '4px'
+        bar.style.right = '4px'
+      }
       if (tabBar) {
         tabBar.style.transform = 'translateY(0)'
         tabBar.style.opacity = ''
