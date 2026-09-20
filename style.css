@@ -121,35 +121,62 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
 
 #topbar {
   position: fixed; top: 0; left: 0; right: 0; z-index: 40;
-  display: flex; align-items: flex-start; justify-content: space-between;
+  display: flex; align-items: center; justify-content: space-between;
   gap: var(--sp-3);
   padding: calc(var(--safe-top) + 10px) var(--sp-4) 8px;
   background: var(--bg);
 }
+/* Title and buttons scaled down (Roman, 21.09) to make room for the deploy
+   counter in the middle. */
+.topbar-titles { flex-shrink: 0; }
 .topbar-title {
-  margin: 0; font-family: var(--font-d); font-size: 27px; font-weight: 800;
+  margin: 0; font-family: var(--font-d); font-size: 22px; font-weight: 800;
   letter-spacing: -0.02em; line-height: 1;
 }
 .topbar-title span { color: var(--text); }
 .topbar-title b { color: var(--amber); font-weight: 800; }
 .topbar-sub {
-  margin-top: 4px; font-size: 9.5px; font-weight: 700; color: var(--secondary);
-  letter-spacing: 0.22em; text-transform: uppercase;
+  margin-top: 3px; font-size: 8.5px; font-weight: 700; color: var(--secondary);
+  letter-spacing: 0.18em; text-transform: uppercase; white-space: nowrap;
 }
+/* NeverMind's #deploy-version badge (index.html:260): 10px/700, radius 6,
+   letter-spacing 0.3px; brown-on-tint became amber-on-tint. In the middle of
+   the bar, the number over the day and time (Roman, 21.09): one line would
+   not fit between the title and the buttons on a 375px phone. */
+.deploy-badge {
+  margin: 0 auto; flex-shrink: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 3px 8px; border-radius: 8px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.3px; line-height: 1;
+  color: #8a5810; background: var(--amber-soft);
+  user-select: none; white-space: nowrap;
+}
+.deploy-badge-time { font-size: 9px; font-weight: 600; opacity: 0.85; }
+.deploy-badge-time:empty { display: none; }
+.deploy-rows { display: flex; flex-direction: column; gap: 10px; padding: 16px 16px 0; font-size: 13px; }
+.deploy-row {
+  display: flex; justify-content: space-between; gap: 12px;
+  padding: 8px 12px; border-radius: 10px; background: var(--amber-soft);
+}
+.deploy-row-label { color: var(--text-2); font-weight: 600; }
+.deploy-row-value { color: var(--text); font-weight: 700; font-family: var(--font-m); text-align: right; word-break: break-all; }
+.deploy-row-value a { color: #8a5810; text-decoration: none; }
+.deploy-hint { padding: 14px 16px 0; font-size: 11px; line-height: 1.45; color: var(--text-2); }
+.deploy-actions { padding: 12px 16px 4px; }
 .topbar-actions { display: flex; align-items: center; gap: var(--sp-2); flex-shrink: 0; }
 
 /* 44px is the smallest target a thumb hits reliably; nothing tappable goes under. */
 .round-btn {
   position: relative;
-  width: 44px; height: 44px; border-radius: 50%;
+  width: 36px; height: 36px; border-radius: 50%;   /* 44 → 36 (Roman, 21.09); flagged in the 44px test */
   display: flex; align-items: center; justify-content: center;
   background: var(--surface); border: 1px solid var(--border); color: var(--primary);
 }
-.round-btn svg { width: 19px; height: 19px; }
+.round-btn svg { width: 17px; height: 17px; }
 .round-btn-primary { background: var(--amber); border-color: var(--amber); color: #fff; }
 .round-btn-dot {
-  position: absolute; top: 9px; right: 10px;
-  width: 8px; height: 8px; border-radius: 50%;
+  position: absolute; top: 6px; right: 7px;
+  width: 7px; height: 7px; border-radius: 50%;
   background: var(--amber); border: 1.5px solid var(--surface);
 }
 

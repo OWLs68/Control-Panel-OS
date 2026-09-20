@@ -17,6 +17,7 @@ import { seedFixtures } from '../data/seed.js'
 import { setupShell } from '../nav/shell.js'
 import { setupKeyboardAvoiding } from '../crow/keyboard.js'
 import { setupVoiceInput } from '../crow/voice.js'
+import { setupDeployInfo } from '../ui/deploy-info.js'
 import { registerControl } from '../modules/control.js'
 import { registerAgents } from '../modules/agents.js'
 import { registerProjects } from '../modules/projects.js'
@@ -46,6 +47,7 @@ export function boot(): void {
 
   setupKeyboardAvoiding()
   setupVoiceInput()
+  setupDeployInfo()
 
   // Web fonts change the bars' height when they land, so measure once more.
   if (document.fonts?.ready) void document.fonts.ready.then(measureChrome)
@@ -115,6 +117,22 @@ function registerServiceWorker(): void {
   // file:// has no worker scope; the app is also opened straight from disk
   // during development and a failed registration should not be noise.
   if (location.protocol === 'file:') return
+
+  // «Оновити застосунок» lands here with ?fresh=…; the query has done its job.
+  if (location.search.includes('fresh=')) history.replaceState(null, '', location.pathname)
+
+  // A new worker has taken over (skipWaiting + clients.claim) while this page
+  // still runs the previous bundle. Reload once, so the phone shows the new
+  // build on the launch that fetched it rather than the one after — unless a
+  // field has focus, in which case the next launch gets it. The first install
+  // also fires this, and there is nothing to swap then.
+  let hadController = !!navigator.serviceWorker.controller
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController) { hadController = true; return }
+    const active = document.activeElement
+    if (active instanceof HTMLTextAreaElement || active instanceof HTMLInputElement) return
+    location.reload()
+  })
 
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').then((reg) => {

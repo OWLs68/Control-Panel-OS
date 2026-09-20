@@ -52,7 +52,11 @@ jobs:
         with:
           enablement: true
 
+      # The badge in the top bar reads "v<run number> · <day> <time>", so the
+      # phone can say which deploy it is showing.
       - name: Build
+        env:
+          DEPLOY_NUMBER: ${{ github.run_number }}
         run: npm run build
 
       - uses: actions/upload-pages-artifact@v3
