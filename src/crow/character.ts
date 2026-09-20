@@ -10,9 +10,10 @@
  * height, so switching pose never changes the layout: with a narrower slot
  * the front pose used to shrink and drop 31px on every reply (ISS-004).
  *
- * Three poses ship now and the component is built to take more: pose selection
- * is data, so a future expression or animation is a new entry here rather than
- * a new branch in whatever happens to be rendering.
+ * Three poses ship and the component is built to take more: pose selection
+ * is data, so a future expression is a new entry here rather than a new branch
+ * in whatever happens to be rendering. Since 20.09 the board does not switch
+ * poses at all — the figure is static by Roman's decision; the poses wait.
  */
 export type CrowPose = 'front' | 'idle' | 'talk'
 
