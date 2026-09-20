@@ -1,34 +1,65 @@
 <!doctype html>
 <html lang="uk">
-  <head>
-    <meta charset="UTF-8" />
-    <!-- viewport-fit=cover is what makes env(safe-area-inset-*) resolve on iPhone. -->
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover"
-    />
-    <meta name="description" content="Roman AI OS Control Panel — операційний інтерфейс системи." />
+<head>
+<meta charset="utf-8">
+<!-- viewport-fit=cover is what makes env(safe-area-inset-*) report real numbers
+     on an iPhone; without it the notch and the home indicator read as 0. -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#F6F0E6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Roma OS">
+<meta name="description" content="Roma OS — інтерфейс-оболонка операційної системи Roman AI OS">
+<title>Roma OS</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./favicon.svg">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Manrope:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
 
-    <!-- iOS standalone behaviour (donor pattern from NeverMind). -->
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="AI OS Panel" />
+<!-- Shell. Everything below the header is drawn by src/, but the frame itself
+     lives here so the first paint already has the right geometry: the document
+     never scrolls, only .screen does, and the bar is pinned to the viewport. -->
+<header id="topbar">
+  <div class="topbar-titles">
+    <h1 class="topbar-title">Roma<span> AI</span> <b>OS</b></h1>
+    <div class="topbar-sub" id="topbar-sub">більше сенсу щодня</div>
+  </div>
+  <div class="topbar-actions">
+    <button class="round-btn" data-action="open-search" aria-label="Пошук">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+    </button>
+    <button class="round-btn" data-action="open-notifications" aria-label="Сповіщення">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+      <span class="round-btn-dot" id="notif-dot" hidden></span>
+    </button>
+    <button class="round-btn round-btn-primary" data-action="open-add" aria-label="Додати вручну">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+  </div>
+</header>
 
-    <!-- Theme colour follows the active scheme so the iOS status bar matches. -->
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0e1117" />
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f6f7f9" />
+<!-- Crow lives outside the scroller: one character, one bubble, one chat for the
+     whole app. The message and the chips change with the active module; the
+     character does not get rebuilt, so its pose animation never restarts. -->
+<section id="crow-zone" aria-label="Crow"></section>
 
-    <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
-    <link rel="apple-touch-icon" href="%BASE_URL%icons/apple-touch-icon.png" />
+<!-- Module screens are injected here, one .screen each. -->
+<main id="screens"></main>
 
-    <title>Roman AI OS — Control Panel</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <noscript>
-      Для роботи панелі потрібен увімкнений JavaScript.
-    </noscript>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<!-- The single Crow chat: window above, input bar below. Fixed to the viewport
+     so the keyboard can lift it without the page moving underneath. -->
+<div id="crow-dock"></div>
+
+<nav id="tab-bar" aria-label="Навігація"></nav>
+
+<div id="toast-host" aria-live="polite"></div>
+
+<script src="./bundle.js"></script>
+</body>
 </html>

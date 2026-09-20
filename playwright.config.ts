@@ -1,52 +1,48 @@
+/**
+ * Playwright, aimed at the only device that matters for Stage 1.
+ *
+ * iOS ships WebKit, so WebKit is the engine that counts — but this cloud
+ * session cannot download it (the browser CDN is outside the egress policy),
+ * and the pre-installed Chromium is all there is locally. So: Chromium with the
+ * iPhone 14 viewport always, and WebKit on top when `PW_WEBKIT=1`, which CI
+ * sets after installing it on the runner.
+ *
+ * Emulated Chromium catches layout, geometry and logic. It does NOT catch the
+ * iOS-only faults — rubber-banding, backdrop clipping, the keyboard's visual
+ * viewport — which is why those still need a real phone.
+ */
 import { defineConfig, devices } from '@playwright/test'
 import { resolveChromiumPath } from './scripts/chromium-path.mjs'
 
-/**
- * E2E configuration.
- *
- * Two viewports, because the panel is mobile-first with a desktop layout on
- * top: an iPhone-sized project (bottom tab bar, safe areas) and a desktop one
- * (sidebar). Both run on Chromium — this environment ships no WebKit build, so
- * genuine iOS quirks (rubber-band scrolling, backdrop-filter compositing,
- * standalone status bar) still need a manual pass on a real iPhone.
- *
- * Tests run against the production build via `vite preview`, so the service
- * worker and manifest under test are the ones that actually ship.
- */
-const executablePath = resolveChromiumPath()
+const chromium = resolveChromiumPath()
+const withWebkit = process.env.PW_WEBKIT === '1'
 
 export default defineConfig({
   testDir: './tests/e2e',
-  timeout: 30_000,
-  expect: { timeout: 7_000 },
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
-  reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : [['list']],
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 1 : 0,
+  reporter: process.env.CI ? [['github'], ['list']] : [['list']],
   use: {
     baseURL: 'http://127.0.0.1:4173',
-    trace: 'on-first-retry',
-    launchOptions: executablePath ? { executablePath } : undefined,
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
   },
   projects: [
     {
-      name: 'iphone',
+      name: 'iphone-chromium',
       use: {
-        ...devices['Desktop Chrome'],
-        viewport: { width: 390, height: 844 },
-        deviceScaleFactor: 3,
-        isMobile: true,
-        hasTouch: true,
+        ...devices['iPhone 14'],
+        defaultBrowserType: 'chromium',
+        ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
       },
     },
-    {
-      name: 'desktop',
-      use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 900 } },
-    },
+    ...(withWebkit ? [{ name: 'iphone-webkit', use: { ...devices['iPhone 14'] } }] : []),
   ],
   webServer: {
-    command: 'npm run preview',
+    command: 'npm run build && npm run serve',
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: !process.env.CI,
-    timeout: 60_000,
+    timeout: 120_000,
   },
 })
