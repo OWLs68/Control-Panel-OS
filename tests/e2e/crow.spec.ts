@@ -14,7 +14,7 @@ test.beforeEach(async ({ page }) => {
   await expect(page.locator('#screen-control')).toHaveClass(/active/)
 })
 
-test('Crow stands beside the bubble at the bubble\'s height, tilted a little', async ({ page }) => {
+test('Crow stands upright beside the bubble at the bubble\'s height', async ({ page }) => {
   const figure = page.locator('.crow-figure')
   await expect(figure).toBeVisible()
 
@@ -35,8 +35,8 @@ test('Crow stands beside the bubble at the bubble\'s height, tilted a little', a
     const m = new DOMMatrix(getComputedStyle(el).transform)
     return Math.abs((Math.atan2(m.b, m.a) * 180) / Math.PI)
   })
-  expect(tilt).toBeGreaterThanOrEqual(5)
-  expect(tilt).toBeLessThanOrEqual(20)
+  // Upright since 20.09: the lean read as crooked on the phone.
+  expect(tilt).toBeLessThanOrEqual(1)
 
   const figureBox = await figure.boundingBox()
   const bubble = await page.locator('#crow-bubble').boundingBox()

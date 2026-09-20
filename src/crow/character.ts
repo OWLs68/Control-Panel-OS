@@ -2,7 +2,7 @@
  * CrowCharacter.
  *
  * Crow is a miniature 3D Roman, standing beside the bubble at the bubble's
- * own height and tilted a little — not a round avatar and not a sticker. The
+ * own height, standing upright — not a round avatar and not a sticker. The
  * geometry is ours: nothing in NeverMind looks like this, so there was no
  * implementation to copy, only behaviour (collapse, priorities, transitions).
  *
@@ -29,7 +29,7 @@ export interface CrowCharacterOptions {
   pose?: CrowPose
   /** Starting height; `fitTo` follows the bubble from then on. */
   height?: number
-  /** Tilt in degrees to the left. */
+  /** Tilt in degrees to the left; 0 since 20.09 — a lean read as crooked on the phone. */
   tilt?: number
 }
 
@@ -40,7 +40,7 @@ export class CrowCharacter {
   private talkTimer: number | null = null
 
   constructor(opts: CrowCharacterOptions = {}) {
-    const tilt = opts.tilt ?? 10
+    const tilt = opts.tilt ?? 0
     this.pose = opts.pose ?? 'front'
 
     this.node = document.createElement('div')

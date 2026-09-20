@@ -58,7 +58,8 @@ let handlers: ChipHandlers = { onChat: () => {}, onNav: () => {}, onOpen: () => 
 export function setupCrowZone(root: HTMLElement, chipHandlers: ChipHandlers): void {
   zone = root
   handlers = chipHandlers
-  character = new CrowCharacter({ pose: 'front', tilt: 10 })
+  // Upright: the 10° lean read as crooked on the phone (Roman, 20.09).
+  character = new CrowCharacter({ pose: 'front', tilt: 0 })
 
   root.dataset.state = 'expanded'
   root.innerHTML = `
@@ -143,7 +144,7 @@ function pin(): void {
   // sits at 0, and a pinned row never feeds back into the figure's size.
   fullHeight = $('#crow-bubble', zone ?? document)?.offsetHeight ?? row.scrollHeight
   document.body.classList.add('crow-dragging')   // the screens follow every frame, no easing
-  row.classList.add('is-moving')                 // clip only while moving; at rest the tilt may overhang
+  row.classList.add('is-moving')                 // clip only while moving; at rest nothing is cropped
   row.style.transition = 'none'
   strip.style.transition = 'none'
   apply(state === 'expanded' ? 1 : 0)
