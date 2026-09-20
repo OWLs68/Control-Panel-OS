@@ -68,6 +68,11 @@ git ls-remote --heads origin "$(git branch --show-current)"
 **без** «РОБИ». Якщо вже існує — **не перезаписувати**, узяти той самий
 `session_id`.
 
+Успішний `/finish` видаляє цей файл. Тому файл, що лишився, означає рівно
+одне: попередній `/finish` не дійшов до кінця (обірвався або CI був
+червоний). Це не привід починати нову сесію поверх — спершу доробити ту,
+чий `session_id` у файлі.
+
 ```bash
 mkdir -p .claude
 if [ ! -f .claude/.session-runtime.json ]; then
@@ -87,6 +92,11 @@ cat .claude/.session-runtime.json
 
 `session_id` = `YYYYMMDD-HHMM-<суфікс гілки>` (для `claude/cool-curie-51d0l9`
 суфікс `51d0l9`; для `main` — `main`).
+
+`start_head` і `start_main` фіксуються тут і дублюються в «ПОТОЧНИЙ СТАН».
+А **поточний HEAD із документів не читається ніколи** — тільки фактично,
+`git rev-parse HEAD` з кроку 5. Документ, який сам комітиться, не може
+містити хеш власного коміту.
 
 ### 9. HOT RULES — останнім
 
