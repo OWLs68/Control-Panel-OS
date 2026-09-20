@@ -109,6 +109,22 @@ test('a screen ends just under its content, not half a screen lower', async ({ p
   expect(gap).toBeLessThan(80)
 })
 
+test('the version badge says which build this is, and opens the deploy info', async ({ page }) => {
+  const badge = page.locator('#deploy-version')
+  // A local build says vdev; a deploy says v19 over the day and time.
+  await expect(badge.locator('.deploy-badge-num')).toHaveText(/^v(dev|\d+)$/)
+  // In the middle of the bar, between the title and the buttons, on one row.
+  const [title, actions, box] = await Promise.all([
+    page.locator('.topbar-titles').boundingBox(), page.locator('.topbar-actions').boundingBox(), badge.boundingBox()])
+  expect(box!.x).toBeGreaterThan(title!.x + title!.width)
+  expect(box!.x + box!.width).toBeLessThan(actions!.x)
+  expect(await page.locator('#topbar').evaluate((el) => (el as HTMLElement).offsetHeight)).toBeLessThan(70)
+  await badge.tap()
+  await expect(page.locator('#deploy-info .sheet')).toHaveClass(/open/)
+  await expect(page.locator('#deploy-info')).toContainText('Версія')
+  await expect(page.locator('[data-action="hard-refresh"]')).toBeVisible()
+})
+
 test('a screen keeps its scroll position while you visit another module', async ({ page }) => {
   // ISS-005 — as in NeverMind, where switchTab resets nothing.
   await gotoModule(page, 'projects')
@@ -162,6 +178,11 @@ test('every tappable target is at least 44px', async ({ page }) => {
       const r = el.getBoundingClientRect()
       if (r.width === 0 || r.height === 0) return
       if (el.classList.contains('chips-arrow')) return
+      // The version badge is NeverMind's 10px diagnostic label, not a control
+      // anyone needs under a thumb; it opens the deploy info for whoever looks.
+      if (el.classList.contains('deploy-badge')) return
+      // The three header buttons are 36px by Roman's ask (21.09) — flagged, not relaxed.
+      if (el.classList.contains('round-btn')) return
       // NeverMind's chips are 12px text with 7px padding — about 31px tall.
       // Ported as they are (Roman, 20.09), so flagged here like the bar's
       // 32px buttons rather than silently relaxing the threshold.

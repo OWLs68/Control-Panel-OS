@@ -31,7 +31,8 @@ IIFE-бандл, один `index.html`, один service worker.
 
 ```bash
 npm install
-npm run build       # → dist/
+npm run build       # → dist/ (бейдж у шапці каже «vdev»)
+DEPLOY_NUMBER=19 npm run build   # бейдж «v19» + дата й час; у CI це номер прогону deploy.yml
 npm run serve       # віддає dist/ на http://127.0.0.1:4173
 npm run lint
 npm run typecheck

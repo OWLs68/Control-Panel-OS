@@ -31,6 +31,19 @@ function precacheList(distDir) {
   return out.sort()
 }
 
+/** What the badge says: deploy number, when, which commit, which branch. */
+function deployStamp() {
+  const number = process.env.DEPLOY_NUMBER?.trim()
+  const commit = (process.env.GITHUB_SHA ?? '').slice(0, 7) || 'local'
+  const branch = process.env.GITHUB_REF_NAME ?? 'dev'
+  const built = new Intl.DateTimeFormat('uk-UA', {
+    timeZone: 'Europe/Kyiv', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+  }).format(new Date()).replace(',', '')
+  const label = number ? `v${number}` : 'vdev'   // the day and time go under it, and into data-built
+  const tag = `${number ? `v${number}` : 'dev'}-${Date.now().toString(36)}`
+  return { number: number ?? 'dev', commit, branch, built, label, tag }
+}
+
 async function buildTests() {
   const dir = join(ROOT, '.tmp/tests')
   rmSync(dir, { recursive: true, force: true })
@@ -71,8 +84,25 @@ async function buildApp() {
   // Static shell + assets. Crow's images live next to the app so the service
   // worker can cache them; the originals were 2 MB each, these are ~25-33 KB.
   cpSync(join(ROOT, 'public'), dist, { recursive: true })
-  cpSync(join(ROOT, 'index.html'), join(dist, 'index.html'))
   cpSync(join(ROOT, 'style.css'), join(dist, 'style.css'))
+
+  // The version badge (NeverMind's deploy-counter idea, without the file:
+  // the number is the deploy workflow's run number, passed in as
+  // DEPLOY_NUMBER; a local build says "dev"). The badge, the commit and the
+  // branch are stamped into index.html, and every asset reference gets a
+  // ?v= so Safari's own HTTP cache — which sits in front of the service
+  // worker and holds on to old CSS and JS — cannot serve a stale file under a
+  // new build (NeverMind, 17.04, session 14zLe).
+  const deploy = deployStamp()
+  const html = readFileSync(join(ROOT, 'index.html'), 'utf8')
+    .replace(/(<span id="deploy-version"[^>]*data-commit=")[^"]*(")/, `$1${deploy.commit}$2`)
+    .replace(/(<span id="deploy-version"[^>]*data-branch=")[^"]*(")/, `$1${deploy.branch}$2`)
+    .replace(/(<span id="deploy-version"[^>]*data-built=")[^"]*(")/, `$1${deploy.built}$2`)
+    .replace(/(<span class="deploy-badge-num">)[^<]*(<\/span>)/, `$1${deploy.label}$2`)
+    .replace(/(<span class="deploy-badge-time">)[^<]*(<\/span>)/, `$1${deploy.number === 'dev' ? '' : deploy.built}$2`)
+    .replace('href="./style.css"', `href="./style.css?v=${deploy.tag}"`)
+    .replace('src="./bundle.js"', `src="./bundle.js?v=${deploy.tag}"`)
+  writeFileSync(join(dist, 'index.html'), html)
   mkdirSync(join(dist, 'assets'), { recursive: true })
   for (const img of ['crow-front.webp', 'crow-idle.webp', 'crow-talk.webp']) {
     cpSync(join(ROOT, 'docs/roma-os/assets', img), join(dist, 'assets', img))
@@ -83,7 +113,7 @@ async function buildApp() {
   // adds a file, and a stale iOS cache is the bug that eats an afternoon.
   const swSrc = readFileSync(join(ROOT, 'sw.js'), 'utf8')
   const assets = precacheList(dist)
-  const version = `roma-os-${Date.now().toString(36)}`
+  const version = `roma-os-${deploy.tag}`
   writeFileSync(
     join(dist, 'sw.js'),
     swSrc
@@ -92,7 +122,7 @@ async function buildApp() {
   )
 
   const bytes = readFileSync(join(dist, 'bundle.js')).length
-  console.log(`✓ dist (bundle ${(bytes / 1024).toFixed(1)} KB, ${assets.length} assets, ${version})`)
+  console.log(`✓ dist (bundle ${(bytes / 1024).toFixed(1)} KB, ${assets.length} assets, ${version}, badge "${deploy.label}")`)
 }
 
 if (TESTS_ONLY) await buildTests()

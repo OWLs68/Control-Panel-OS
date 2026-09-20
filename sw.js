@@ -17,9 +17,12 @@ self.addEventListener('install', (event) => {
   // serving its own precached index.html and hashed bundles for as long as the
   // app is open, this worker sits in "waiting" forever, and the phone shows the
   // old app no matter how many times the URL is opened.
+  // `cache: 'reload'` — fetch every file from the network, never from the
+  // HTTP cache: Safari keeps old CSS and JS in front of the worker, and a new
+  // worker precaching a stale bundle is exactly "the app didn't update".
   event.waitUntil(
     caches.open(CACHE)
-      .then((cache) => cache.addAll(PRECACHE))
+      .then((cache) => cache.addAll(PRECACHE.map((url) => new Request(url, { cache: 'reload' }))))
       .then(() => self.skipWaiting()),
   )
 })
@@ -59,7 +62,8 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return   // fonts and the like go to the network
 
   event.respondWith(
-    caches.match(request).then((hit) => {
+    // ignoreSearch: index.html asks for bundle.js?v=…, the cache holds bundle.js.
+    caches.match(request, { ignoreSearch: true }).then((hit) => {
       if (hit) return hit
       return fetch(request)
         .then((response) => {

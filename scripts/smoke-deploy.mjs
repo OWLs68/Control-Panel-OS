@@ -39,6 +39,12 @@ check(await page.locator('.drum-capsule').isVisible(), 'the drum capsule is on s
 check(await page.locator('#crow-zone .crow-figure').isVisible(), 'Crow is on screen')
 check(await page.locator('#crow-input').isVisible(), 'the Crow field is present')
 
+// The version badge is what tells Roman which deploy the phone shows; a
+// published build must carry a number, never the local "vdev".
+const badge = (await page.locator('#deploy-version .deploy-badge-num').textContent())?.trim() ?? ''
+const built = (await page.locator('#deploy-version .deploy-badge-time').textContent())?.trim() ?? ''
+check(/^v\d+$/.test(badge) && /^\d\d\.\d\d \d\d:\d\d$/.test(built), `the version badge is stamped (${badge || 'empty'} ${built})`)
+
 // The image is the asset most likely to 404 behind a sub-path.
 const crowLoaded = await page.locator('.crow-figure img').evaluate(
   (img) => img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0)
