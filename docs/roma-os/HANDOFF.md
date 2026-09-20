@@ -21,7 +21,7 @@
 - **branch:** `claude/cool-curie-51d0l9`
 - **start_head:** `bbb48df`
 - **start_main:** `bbb48df`
-- **current_head:** _оновлюється фінальним комітом сесії_
+- **current_head:** `9469db9`
 
 **Де зупинились.** Етап 1 зібраний і задеплоєний: живий URL віддає Roma OS
 (`main` = `bbb48df`, deploy зелений). Цієї сесії продуктовий код не чіпався —
