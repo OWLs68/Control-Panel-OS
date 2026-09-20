@@ -17,7 +17,8 @@ import { getEnabledModuleIds } from './module-state.js'
 import { rebuildDrum, setupDrum, updateDrum } from './drum.js'
 import { openModuleSheet } from './module-sheet.js'
 import { setupCrowZone, showMessage, refreshAge } from '../crow/board.js'
-import { openChatBar, sendText, setupChat, updateContextLine } from '../crow/chat.js'
+import { autoResizeTextarea, openChatBar, sendText, setupChat, updateContextLine } from '../crow/chat.js'
+import { getAdapter } from '../data/adapters.js'
 import type { ChipHandlers } from '../crow/chips.js'
 
 const AGE_TICK_MS = 60_000
@@ -28,6 +29,7 @@ const chipHandlers: ChipHandlers = {
   onOpen: (id, label) => {
     navigate({ moduleId: 'projects', select: { entity: 'blocker', id, label } })
   },
+  onSpeak: () => openChatWithFocus(),
 }
 
 export function setupShell(): void {
@@ -56,6 +58,25 @@ export function setupShell(): void {
       if (!ids.includes(getActiveModuleId())) switchModule(HOME_MODULE_ID)
     })
   })
+
+  // Anything on a screen that points at a module — a metric tile, a node on
+  // the system map, a row in «Стан системи» — goes through one action.
+  reg('open-module', (data) => { if (data.module) switchModule(data.module) })
+
+  // The top bar. Crow is the search and the way to add things, so both open
+  // the chat; the bell is the system's own feed.
+  reg('open-search', () => openChatWithFocus())
+  reg('open-add', () => openChatWithFocus('Додай '))
+  reg('open-notifications', () => {
+    switchModule('events')
+    const dot = $('#notif-dot')
+    if (dot) dot.hidden = true
+  })
+  // A row that is really a question for Crow, asked in Roman's own words.
+  reg('ask-crow', (data) => { if (data.text) { openChatBar(); sendText(data.text) } })
+
+  updateNotifDot()
+  onDataChanged(updateNotifDot)
 
   window.addEventListener(NAVIGATE, (e) => {
     const req = (e as CustomEvent<NavigateRequest>).detail
@@ -100,10 +121,11 @@ export function switchModule(id: string, force = false): void {
   $$('.screen').forEach((s) => {
     s.classList.remove('active', 'slide-from-right', 'slide-from-left')
   })
+  // The scroll position is the screen's own and survives a switch, as in
+  // NeverMind (`switchTab` resets nothing; pages are hidden, not destroyed).
   const screen = $(`#screen-${id}`)
   if (screen) {
     screen.classList.add('active', direction === 'right' ? 'slide-from-right' : 'slide-from-left')
-    screen.scrollTop = 0
   }
 
   updateDrum(id)
@@ -115,7 +137,12 @@ function renderModule(id: string): void {
   const mod = getModule(id)
   const screen = $(`#screen-${id}`)
   if (!mod || !screen) return
+  // The screen is its own scroller, and replacing its content empties it for
+  // an instant — long enough for the browser to clamp scrollTop to 0. Keep
+  // the position across the redraw (ISS-005).
+  const keep = screen.scrollTop
   mod.render(screen)
+  screen.scrollTop = keep
 }
 
 function greet(id: string): void {
@@ -123,4 +150,25 @@ function greet(id: string): void {
   if (!mod) return
   const g = mod.greeting()
   showMessage({ title: g.title, text: g.text, priority: g.priority, chips: g.chips, ts: Date.now() })
+}
+
+/** Open the chat with the caret in the field; `draft` seeds an empty field. */
+function openChatWithFocus(draft = ''): void {
+  openChatBar()
+  const input = $<HTMLTextAreaElement>('#crow-input')
+  if (!input) return
+  if (draft && !input.value) {
+    input.value = draft
+    autoResizeTextarea(input)
+  }
+  input.focus()
+  const end = input.value.length
+  input.setSelectionRange(end, end)
+}
+
+/** The bell's dot: on while something critical waits on Roman. */
+function updateNotifDot(): void {
+  const dot = $('#notif-dot')
+  if (!dot) return
+  dot.hidden = !getAdapter().attention().value.some((a) => a.severity === 'critical')
 }
