@@ -34,7 +34,10 @@ export interface ModuleDef {
   label: string
   /** Full name for the modules sheet. */
   title: string
-  /** Sub-label in the sheet, e.g. 'ядро · головна'. */
+  /**
+   * What kind of module it is, e.g. 'ядро · головна'. Not drawn on the
+   * modules sheet: its card is NeverMind's, one line of text (PORTING.md §3).
+   */
   kind: string
   group: 'core' | 'personal'
   icon: string

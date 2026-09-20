@@ -867,96 +867,129 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
 .drum-capsule.drum-dragging .tab-item { transition: opacity 0.1s !important; }
 
 /* ── Sheets and modals ───────────────────────────────────────────────── */
+/* Ported from NeverMind's tab selector (src/core/nav.js:200–247 and 340–381;
+   inline styles moved into classes, the numbers untouched) with the modal
+   contract from DESIGN_SYSTEM.md «Bottom Sheet». Our own: the palette —
+   rgba(30,16,64,x) → rgba(38,42,47,x), #1e1040 → #202326, the lilac sheet
+   tint rgba(250,249,255,0.97) → the surface tint, the per-tab accents → amber
+   (#8a5810 where the accent is used as text, as on chips and badges). */
 
 /* The dim layer is a top-level sibling, never a child of the sheet. As a child
    its blur gets clipped to the card's composite region the moment the card is
-   dragged — the "shrinking modal" bug on iOS. */
+   dragged — the "shrinking modal" bug on iOS (UvEHE 03.05). The donor stacks
+   it at 300; here the toast host owns 300, and a toast must stay readable
+   over an open sheet. */
 .sheet-overlay {
   position: fixed; inset: 0; z-index: 199;
-  background: rgba(38,42,47,0.35);
+  background: rgba(0,0,0,0.3);
   backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-  opacity: 0; pointer-events: none;
-  transition: opacity var(--motion-normal) var(--ease-smooth);
+  pointer-events: none;
 }
-.sheet-overlay.open { opacity: 1; }
 .sheet-root {
   position: fixed; inset: 0; z-index: 200;
-  display: none; align-items: flex-end; justify-content: center;
+  display: flex; align-items: flex-end; justify-content: center;
 }
-.sheet-root.open { display: flex; }
 .sheet {
   position: relative; width: 100%; max-width: 480px;
-  max-height: 85vh; display: flex; flex-direction: column;
-  background: var(--surface);
-  border-radius: var(--r-xl) var(--r-xl) 0 0;
-  border-top: 1px solid var(--border);
-  box-shadow: 0 -8px 40px rgba(38,42,47,0.18);
+  max-height: 85vh; display: flex; flex-direction: column; overflow: hidden;
+  background: rgba(255,249,242,0.97);
+  backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px);
+  border-radius: 28px 28px 0 0;
+  padding: 0 0 calc(var(--safe-bottom) + 20px);
+  border-top: 1.5px solid rgba(255,255,255,0.8);
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.15);
   transform: translateY(100%);
-  transition: transform var(--motion-slow) var(--ease-spring);
-  padding: 0 var(--sp-5);   /* on the outer panel, never on the scroller */
-  overflow: hidden;
+  transition: transform 0.35s cubic-bezier(0.32,0.72,0,1);
 }
 .sheet.open { transform: translateY(0); }
-.sheet-grab { flex: 0 0 auto; padding: 10px 0 6px; display: flex; justify-content: center; touch-action: none; }
-.sheet-grab::before { content: ''; width: 36px; height: 4px; border-radius: 2px; background: var(--border); }
-.sheet-head { flex: 0 0 auto; padding-bottom: var(--sp-3); border-bottom: 1px solid var(--ink-line); }
-.sheet-title { font-family: var(--font-d); font-size: 21px; font-weight: 800; }
-.sheet-sub { margin-top: 2px; font-size: var(--fs-sm); color: var(--text-2); }
-.sheet-body {
-  flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: none;
-  scrollbar-width: none; padding: var(--sp-4) 0;
+.sheet-head {
+  flex: 0 0 auto; padding: 14px 20px 10px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid rgba(38,42,47,0.06);
 }
+/* The handle sits in the head's left column, centred over the title — where
+   the donor has it (nav.js:234). */
+.modal-handle { width: 36px; height: 4px; background: rgba(0,0,0,0.1); border-radius: 2px; margin: 0 auto 14px; }
+.sheet-title { font-size: 18px; font-weight: 800; color: #202326; }
+.sheet-sub { margin-top: 2px; font-size: 12px; font-weight: 500; color: rgba(38,42,47,0.38); }
+.sheet-action {
+  background: #202326; border-radius: 14px; padding: 9px 18px;
+  font-size: 14px; font-weight: 700; color: #fff;
+}
+.sheet-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: none; scrollbar-width: none; }
 .sheet-body::-webkit-scrollbar { display: none; }
-.sheet-foot {
-  flex: 0 0 auto;
-  padding-bottom: calc(var(--safe-bottom) + var(--sp-5));
-  padding-top: var(--sp-2);
-}
 
-.mod-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
-/* Children of a sheet are solid fills — one glass layer per stack. */
+/* Module cards — the donor's tab cards (nav.js:212–229). Solid-ish fills: one
+   glass layer per stack, and the sheet already has it. */
+.mod-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 16px 16px 8px; }
 .mod-card {
-  position: relative; text-align: left; min-height: 44px;
-  padding: 13px; border-radius: var(--r-md);
-  background: #fff; border: 2px solid var(--border);
-  transition: background var(--motion-fast), border-color var(--motion-fast);
+  position: relative; text-align: left;
+  border-radius: 18px; padding: 14px;
+  background: rgba(255,255,255,0.6); border: 2px solid rgba(38,42,47,0.08);
+  transition: all 0.18s; -webkit-tap-highlight-color: transparent;
 }
 .mod-card.on { background: var(--amber-soft); border-color: var(--amber); }
 .mod-card-ico {
-  width: 38px; height: 38px; border-radius: 11px; margin-bottom: 7px;
+  width: 40px; height: 40px; border-radius: 12px; margin-bottom: 8px;
   display: flex; align-items: center; justify-content: center;
-  background: var(--ink-soft); color: var(--secondary);
+  background: rgba(38,42,47,0.06); color: rgba(38,42,47,0.4);
+  transition: all 0.18s;
 }
 .mod-card.on .mod-card-ico { background: var(--amber); color: #fff; }
-.mod-card-ico svg { width: 19px; height: 19px; }
+.mod-card-ico svg { width: 20px; height: 20px; }
 /* Spans inside a <button>, so they need to be told to take their own line. */
-.mod-card-name { display: block; font-weight: 800; font-size: 14px; color: var(--secondary); }
-.mod-card.on .mod-card-name { color: var(--text); }
-.mod-card-kind { display: block; margin-top: 2px; font-size: var(--fs-xs); color: var(--text-2); }
-.mod-card-ico { display: flex; }
+.mod-card-name { display: block; font-size: 14px; font-weight: 700; line-height: 1.2; color: rgba(38,42,47,0.45); }
+.mod-card.on .mod-card-name { color: #8a5810; }
 .mod-card-check {
-  position: absolute; top: 10px; right: 10px;
-  width: 21px; height: 21px; border-radius: 7px;
+  position: absolute; top: 10px; right: 10px; width: 20px; height: 20px;
+  border-radius: 6px; border: 2px solid rgba(38,42,47,0.15); background: transparent;
   display: flex; align-items: center; justify-content: center;
-  border: 2px solid var(--border); background: transparent;
+  transition: all 0.18s;
 }
-.mod-card.on .mod-card-check { background: var(--amber); border-color: var(--amber); }
-.mod-card-check svg { width: 11px; height: 11px; color: #fff; }
+.mod-card.on .mod-card-check { border-color: var(--amber); background: var(--amber); }
 .mod-card-locked {
   position: absolute; top: 10px; right: 10px;
   padding: 2px 7px; border-radius: 6px;
-  background: var(--ink-soft); color: var(--text-2);
-  font-size: 9.5px; font-weight: 800; letter-spacing: 0.04em;
+  background: rgba(38,42,47,0.06); color: rgba(38,42,47,0.3);
+  font-size: 10px; font-weight: 700;
 }
-.mod-order { display: flex; gap: 7px; overflow-x: auto; scrollbar-width: none; padding: var(--sp-1) 0; }
+
+/* Order strip — renderTabOrderList (nav.js:340–381). The ‹ › arrows exist only
+   next to the chip that was tapped. */
+.mod-order-wrap { padding: 0 16px 8px; }
+.mod-order-label {
+  margin-bottom: 8px; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase; color: rgba(38,42,47,0.35);
+}
+.mod-order {
+  display: flex; flex-direction: row; gap: 8px; overflow-x: auto;
+  padding: 4px 0 8px; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
 .mod-order::-webkit-scrollbar { display: none; }
+.mod-order-hint { font-size: 12px; font-weight: 500; text-align: center; color: rgba(38,42,47,0.3); }
 .mod-order-item {
-  flex: 0 0 auto; min-height: 36px; padding: 8px 12px; border-radius: var(--r-pill);
-  background: #fff; border: 1px solid var(--border);
-  font-size: 12.5px; font-weight: 700; white-space: nowrap;
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+  padding: 8px 10px; border-radius: 20px;
+  background: rgba(38,42,47,0.04); border: 1.5px solid transparent;
+  transition: all 0.18s; -webkit-tap-highlight-color: transparent;
 }
-.mod-order-item.sel { background: var(--primary); color: #fff; border-color: var(--primary); }
-.mod-order-move { display: flex; gap: 7px; margin-top: var(--sp-2); }
+.mod-order-item.sel { background: var(--amber-soft); border-color: var(--amber); }
+.mod-order-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--amber); flex-shrink: 0; }
+.mod-order-name { font-size: 14px; font-weight: 600; white-space: nowrap; color: rgba(38,42,47,0.6); }
+.mod-order-item.sel .mod-order-name { font-weight: 700; color: #202326; }
+.mod-order-first {
+  padding: 2px 6px; border-radius: 6px;
+  background: rgba(38,42,47,0.06); color: rgba(38,42,47,0.3);
+  font-size: 10px; font-weight: 700;
+}
+.mod-order-group { display: flex; align-items: center; gap: 3px; flex-shrink: 0; }
+.mod-order-move {
+  width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+  background: rgba(38,42,47,0.1);
+  display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+.mod-order-move[disabled] { opacity: 0.25; pointer-events: none; }
 
 /* ── Toast ───────────────────────────────────────────────────────────── */
 
