@@ -5,8 +5,8 @@
 # path and works at any sub-path the site is served from.
 name: Deploy to GitHub Pages
 
-# main only. The Roma OS branch must NOT publish: the live URL still serves the
-# old Control Panel, and switching it over is a separate, deliberate decision.
+# main only. Feature branches must NOT publish — they are checked by ci.yml and
+# reach the live URL only once their work is merged here.
 on:
   push:
     branches:

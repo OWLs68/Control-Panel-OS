@@ -25,3 +25,8 @@ npm-debug.log*
 
 # TS build info
 *.tsbuildinfo
+
+# Службові метадані сесії Claude. Команди в .claude/commands/ — комітяться,
+# межі конкретної сесії — ні (вони дублюються в HANDOFF → ПОТОЧНИЙ СТАН).
+.claude/.session-runtime.json
+
