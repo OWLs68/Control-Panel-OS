@@ -27,9 +27,12 @@ ID наскрізні: `ISS-001`, `ISS-002`, … Ротації немає — �
 
 ## Відкриті
 
+Усі шість нижче — `fixed`: виправлено в коді й перевірено headless, чекають
+перевірки на живому iPhone (`STAGE-1.md §6.2`), після якої стануть `verified`.
+
 ### ISS-002 — поле вводу ховається за барабаном на живому iPhone
 
-- **status:** `open`
+- **status:** `fixed`
 - **priority:** `critical`
 - **discovered:** 2026-09-20, живий URL на iPhone (скріншот Романа, екран «Події»)
 - **area:** оболонка / `--tabbar-h`
@@ -49,10 +52,12 @@ ID наскрізні: `ISS-001`, `ISS-002`, … Ротації немає — �
   `#tab-bar`, як уже зроблено для капсули барабана. Тест
   `the measured bar height reaches the CSS variable` цього не ловить: він
   перевіряє лише, що значення в межах 50–140.
+- **fix commit:** `907291b` — boot.ts: ResizeObserver на `#tab-bar`/`#topbar`/полі вводу + fallback 500 мс, як у донора. Тест: змінна дорівнює реальній висоті і слідує за пізнім ростом бару.
+- **verification:** headless Chromium 390px (e2e) ✅; живий iPhone — ще ні
 
 ### ISS-003 — `--dock-h` міряє весь бар разом зі схованим вікном чату
 
-- **status:** `open`
+- **status:** `fixed`
 - **priority:** `high`
 - **discovered:** 2026-09-20, headless Chromium 390px під час розбору ISS-002
 - **area:** оболонка / відступи екранів
@@ -69,10 +74,12 @@ ID наскрізні: `ISS-001`, `ISS-002`, … Ротації немає — �
   до кінця. `getComputedStyle(document.documentElement)
   .getPropertyValue('--dock-h')` → `427px`.
 - **notes:** міряти `.ai-bar-input-box`, а не весь `#crow-ai-bar`.
+- **fix commit:** `907291b` — `--dock-h` = висота `.ai-bar-input-box` + 4. Відступ екрана 141px замість 514. Тест: після прокрутки до кінця зазор до поля < 80px.
+- **verification:** headless Chromium 390px (e2e) ✅; живий iPhone — ще ні
 
 ### ISS-004 — Crow у позі `front` зменшується і з'їжджає вниз
 
-- **status:** `open`
+- **status:** `fixed`
 - **priority:** `high`
 - **discovered:** 2026-09-20, живий URL на iPhone (скріншот Романа) + headless
 - **area:** Crow / `character.ts`, `.crow-figure`
@@ -93,10 +100,12 @@ ID наскрізні: `ISS-001`, `ISS-002`, … Ротації немає — �
   до ~208px), або обрізати `crow-front.webp` до пропорції інших поз, або
   підняти фігуру до верху зони. Нахил 14° — свідомий параметр
   (`HANDOFF §3.5`: 10–20°), міняється одним числом у `board.ts`.
+- **fix commit:** `3608e15` — Слот фігури = висота бульбашки × пропорція найширшої пози (`fitTo`), тож жодна поза не зменшується і не з’їжджає. Фігура тепер заввишки з бульбашку (рішення Романа 20.09), нахил 10°.
+- **verification:** headless Chromium 390px (e2e) ✅; живий iPhone — ще ні
 
 ### ISS-005 — перемикання вкладки скидає прокрутку екрана на початок
 
-- **status:** `open`
+- **status:** `fixed`
 - **priority:** `medium`
 - **discovered:** 2026-09-20, аудит скролів (headless Chromium, усі 5 екранів)
 - **area:** оболонка / `shell.ts`
@@ -109,10 +118,12 @@ ID наскрізні: `ISS-001`, `ISS-002`, … Ротації немає — �
 - **reproduction:** «Проєкти» → прокрутити → «Події» → «Проєкти».
 - **notes:** один рядок у `shell.ts:106`. Якщо скидання — свідоме рішення,
   переносимо в `PORTING.md §3` як відступ, а не лишаємо мовчки.
+- **fix commit:** `907291b` — Скидання прибрано; `renderModule` зберігає й повертає `scrollTop` навколо перемальовування. Тест: позиція «Проєктів» переживає похід у «Події».
+- **verification:** headless Chromium 390px (e2e) ✅; живий iPhone — ще ні
 
 ### ISS-006 — метрики на Control не влазять у ряд, четверта картка обрізана
 
-- **status:** `open`
+- **status:** `fixed`
 - **priority:** `medium`
 - **discovered:** 2026-09-20, аудит скролів (headless Chromium 390px) + скріншот
 - **area:** Control / композиція
@@ -127,10 +138,12 @@ ID наскрізні: `ISS-001`, `ISS-002`, … Ротації немає — �
 - **reproduction:** Control на 390px, ряд метрик під зоною Crow.
 - **notes:** мокап — джерело композиції (`HANDOFF §0`), тут він не
   дотриманий.
+- **fix commit:** `3608e15` — Сітка `repeat(4, 1fr)` з числами мокапа; плитки — кнопки, відкривають модуль.
+- **verification:** headless Chromium 390px (e2e) ✅; живий iPhone — ще ні
 
 ### ISS-007 — згортання зони Crow різке і незрозуміле
 
-- **status:** `open`
+- **status:** `fixed`
 - **priority:** `high`
 - **discovered:** 2026-09-20, живий iPhone (Роман), підтверджено по коду
 - **area:** Crow / `board.ts`, `#crow-zone` CSS
@@ -159,6 +172,8 @@ ID наскрізні: `ISS-001`, `ISS-002`, … Ротації немає — �
 ---
 
 ## Закриті
+- **fix commit:** `3608e15` — Зона слідує за пальцем, защіпується на порозі 40px; смужка проявляється cross-fade; чіпи лишаються; свайп униз по смужці розгортає; свайп униз по табло відкриває чат.
+- **verification:** headless Chromium 390px (e2e) ✅; живий iPhone — ще ні
 
 ### ISS-001 — smoke-тест деплою шукав елемент старого чат-бару
 
