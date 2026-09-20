@@ -100,8 +100,10 @@ Start HEAD: `bbb48df`
 Work end HEAD: `b33f75e` (HEAD до службових docs-комітів `/finish`)
 Commits: 7 до `work_end_head` + службові коміти `/finish`. Уся сесія —
 службова документація; продуктовий код не чіпався
-CI: ✅ зелений на кожному запушеному коміті сесії (job `checks` + job `e2e`,
-Chromium і WebKit). Актуальний статус `/start` читає з GitHub, а не звідси —
-з тієї ж причини, що й HEAD
+CI: ✅ зелений на кожному прогоні, що добіг до кінця (job `checks` + job
+`e2e`, Chromium і WebKit). Частина проміжних прогонів — `cancelled`: це
+`concurrency: cancel-in-progress` з `ci.yml` скасовує попередній прогін,
+коли його перекриває наступний push. Це не падіння. Актуальний статус
+`/start` читає з GitHub, а не звідси — з тієї ж причини, що й HEAD
 Локально перед push: `verify` ✅ · `e2e` ✅ 26/26 (Chromium)
 Deploy: не запускався — `main` не чіпався; живий URL лишається на `bbb48df`
