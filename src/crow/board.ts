@@ -270,7 +270,7 @@ export function showMessage(msg: BoardMessage): void {
     }
   }
 
-  character?.sayOnce()
+  // No gesture on a greeting: the figure stays put on every tab (Roman, 20.09).
   renderBoardChips(msg.chips)
   refreshAge()
 }
@@ -302,7 +302,11 @@ export function refreshAge(): void {
   time.textContent = label ? `• ${label}` : ''
 }
 
-export function crowSpeaking(on: boolean): void {
-  if (on) character?.startTalking()
-  else character?.stopTalking()
+/**
+ * Static by decision (20.09): a reply no longer changes the pose. The poses
+ * are still in `CrowCharacter`, so re-enabling is `startTalking`/`stopTalking`
+ * here and nothing else.
+ */
+export function crowSpeaking(_on: boolean): void {
+  /* intentionally still */
 }

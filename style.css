@@ -189,23 +189,23 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
   display: flex; align-items: flex-end; justify-content: center;
   transform: rotate(calc(-1 * var(--crow-tilt)));
   transform-origin: 60% 100%;
-  transition: transform var(--motion-slow) var(--ease-spring),
-              opacity var(--motion-normal) var(--ease-smooth);
 }
+/* Static: no bobbing, no pose flip on a greeting — the figure "flying" up and
+   down on every tab read as a glitch on the phone (Roman, 20.09). The shadow
+   is the mockup's (.crow-fig): a soft drop shadow on the silhouette plus a
+   contact ellipse under the feet, both scaled to the figure's height
+   (104×15 at 228px in the mockup). */
 .crow-figure img {
   width: auto; height: 100%; max-width: 100%;
   object-fit: contain; object-position: bottom center;
+  filter: drop-shadow(0 8px 14px rgba(38,42,47,0.22));
   pointer-events: none; user-select: none; -webkit-user-drag: none;
 }
-.crow-figure.is-talking { animation: crow-talk 2.4s var(--ease-smooth) infinite; }
-@keyframes crow-talk {
-  0%, 100% { transform: rotate(calc(-1 * var(--crow-tilt))) translateY(0); }
-  50%      { transform: rotate(calc(-1 * var(--crow-tilt) + 1.5deg)) translateY(-2px); }
-}
 .crow-shadow {
-  position: absolute; bottom: 1px; left: 50%; transform: translateX(-50%);
-  width: 64%; height: 8px; border-radius: 50%;
-  background: radial-gradient(ellipse at center, rgba(38,42,47,0.16), transparent 70%);
+  position: absolute; bottom: 2px; left: 52%; transform: translateX(-50%);
+  width: calc(var(--crow-figure-h) * 0.456); height: calc(var(--crow-figure-h) * 0.066);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(38,42,47,0.26) 0%, transparent 70%);
 }
 
 /* Speech bubble. Solid, not glass: it sits over a plain background, and a blur
