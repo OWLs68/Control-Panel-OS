@@ -399,7 +399,6 @@ export function clearHistory(): void {
   const list = $('#crow-chat-messages')
   if (!list) return
   hideTyping()
-  list.querySelectorAll('.chat-chips-row').forEach((n) => n.remove())
   list.innerHTML = ''
   delete list.dataset.restored
   restoreChatUI()
