@@ -72,8 +72,8 @@ Hermes з телефона, темна тема, кнопки шапки). Ці�
 
 Branch: `claude/cool-curie-51d0l9`
 Start HEAD: `bbb48df`
-End HEAD: `9469db9`
-Commits: 2 — службова документація; продуктовий код не чіпався
+End HEAD: `6ac63ce` (останній коміт роботи; запис несе наступний коміт)
+Commits: 4 — службова документація; продуктовий код не чіпався
 CI: ✅ зелений — run #12 на `10f13d9` (job `checks` + job `e2e`, Chromium і WebKit)
 Локально перед push: `verify` ✅ · `e2e` ✅ 26/26 (Chromium)
 Deploy: не запускався — `main` не чіпався; живий URL лишається на `bbb48df`
