@@ -60,7 +60,11 @@ export function boot(): void {
     const observer = new ResizeObserver(measureChrome)
     for (const id of ['tab-bar', 'topbar', 'crow-input-box', 'crow-zone']) {
       const el = document.getElementById(id)
-      if (el) observer.observe(el)
+      if (!el) continue
+      // The safe-area inset is padding, and padding lies outside the content
+      // box an observer watches by default — so watch the border box, or a
+      // bar that grows by its inset alone would never be re-measured.
+      try { observer.observe(el, { box: 'border-box' }) } catch { observer.observe(el) }
     }
   }
 

@@ -71,17 +71,16 @@ test('the measured bar height reaches the CSS variable', async ({ page }) => {
 
 test('the bar is re-measured when it grows after boot, and the input box stays above it', async ({ page }) => {
   // ISS-002: on the phone the bar grows late (safe area, font swap) and the
-  // input box ended up under it. Grow it now and see the variable follow.
+  // input box ended up under it. Let boot's 500ms fallback measurement pass
+  // first, then grow the bar by padding alone — only the observer can catch
+  // that — and see the variable follow.
+  await page.waitForTimeout(800)
   await page.addStyleTag({ content: '#tab-bar { padding-bottom: 40px !important; }' })
-  await expect.poll(() => page.evaluate(() => ({
-    value: parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tabbar-h'), 10),
-    real: (document.getElementById('tab-bar') as HTMLElement).offsetHeight,
-  })), { timeout: 2000 }).toEqual(expect.objectContaining({ real: expect.any(Number) }))
-  const after = await page.evaluate(() => ({
-    value: parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tabbar-h'), 10),
-    real: (document.getElementById('tab-bar') as HTMLElement).offsetHeight,
-  }))
-  expect(after.value).toBe(after.real)
+  await expect.poll(() => page.evaluate(() => {
+    const value = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tabbar-h'), 10)
+    const real = (document.getElementById('tab-bar') as HTMLElement).offsetHeight
+    return real - value
+  }), { timeout: 2000 }).toBe(0)
 
   await page.waitForTimeout(400)   // the bar's `bottom` transition
   const box = await page.locator('.ai-bar-input-box').boundingBox()
