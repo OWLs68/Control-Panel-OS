@@ -17,13 +17,13 @@ import { getEnabledModuleIds } from './module-state.js'
 import { rebuildDrum, setupDrum, updateDrum } from './drum.js'
 import { openModuleSheet } from './module-sheet.js'
 import { setupCrowZone, showMessage, refreshAge } from '../crow/board.js'
-import { openChat, sendText, setupChat, updateContextLine } from '../crow/chat.js'
+import { openChatBar, sendText, setupChat, updateContextLine } from '../crow/chat.js'
 import type { ChipHandlers } from '../crow/chips.js'
 
 const AGE_TICK_MS = 60_000
 
 const chipHandlers: ChipHandlers = {
-  onChat: (label) => { openChat('a'); sendText(label) },
+  onChat: (label) => { openChatBar(); sendText(label) },
   onNav: (moduleId) => switchModule(moduleId),
   onOpen: (id, label) => {
     navigate({ moduleId: 'projects', select: { entity: 'blocker', id, label } })
@@ -33,9 +33,9 @@ const chipHandlers: ChipHandlers = {
 export function setupShell(): void {
   const screens = $('#screens')
   const zone = $('#crow-zone')
-  const dock = $('#crow-dock')
-  const bar = $('#tab-bar')
-  if (!screens || !zone || !dock || !bar) throw new Error('shell markup missing')
+  const bar = $('#crow-ai-bar')
+  const tabBar = $('#tab-bar')
+  if (!screens || !zone || !bar || !tabBar) throw new Error('shell markup missing')
 
   // One .screen per registered module, including the hidden ones: hiding a
   // module takes it out of the bar, not out of the system, so its screen has to
@@ -45,8 +45,8 @@ export function setupShell(): void {
     .join('')
 
   setupCrowZone(zone, chipHandlers)
-  setupChat(dock)
-  setupDrum(bar, (id) => switchModule(id))
+  setupChat(chipHandlers)
+  setupDrum(tabBar, (id) => switchModule(id))
 
   reg('open-modules', () => {
     openModuleSheet((ids) => {

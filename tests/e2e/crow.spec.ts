@@ -39,13 +39,13 @@ test('Crow stands full height at the left, tilted, with the bubble to his right'
 })
 
 test('chips sit under the bubble and doing one sends it as my own words', async ({ page }) => {
-  const chip = page.locator('.chip').first()
+  const chip = page.locator('#crow-chips .chip').first()
   await expect(chip).toBeVisible()
   const label = (await chip.textContent())?.trim() ?? ''
 
   await chip.tap()
-  await expect(page.locator('.msg-user')).toContainText(label)
-  await expect(page.locator('.msg-agent')).toBeVisible()
+  await expect(page.locator('.msg-bubble--user')).toContainText(label)
+  await expect(page.locator('.msg-bubble--agent').last()).toBeVisible()
 })
 
 test('the zone collapses on a swipe up and comes back', async ({ page }) => {
@@ -75,15 +75,15 @@ test('collapsing gives the screen its space back', async ({ page }) => {
 test('the input is present on every module', async ({ page }) => {
   for (const id of ['control', 'agents', 'projects', 'events']) {
     await gotoModule(page, id)
-    await expect(page.locator('#chat-input')).toBeVisible()
+    await expect(page.locator('#crow-input')).toBeVisible()
   }
 })
 
 test('the chat opens compact, expands to full, and closes', async ({ page }) => {
-  const win = page.locator('#chat-window')
+  const win = page.locator('#crow-chat-window')
   await expect(win).not.toHaveClass(/open/)
 
-  await page.locator('#chat-input').tap()
+  await page.locator('#crow-input').tap()
   await expect(win).toHaveClass(/open/)
   // Wait for the open animation before measuring, or the height read is a frame
   // somewhere in the middle of it.
@@ -91,33 +91,33 @@ test('the chat opens compact, expands to full, and closes', async ({ page }) => 
   const compact = (await win.boundingBox())?.height ?? 0
   expect(compact).toBeGreaterThan(150)
 
-  await swipeY(page, '#chat-handle', 300, 180)    // up: compact → full
+  await swipeY(page, '#crow-chat-handle', 300, 180)    // up: compact → full
   await page.waitForTimeout(500)
   const full = (await win.boundingBox())?.height ?? 0
   expect(full).toBeGreaterThan(compact)
 
-  await swipeY(page, '#chat-handle', 180, 340)    // down: full → compact
+  await swipeY(page, '#crow-chat-handle', 180, 340)    // down: full → compact
   await page.waitForTimeout(500)
   const backToCompact = (await win.boundingBox())?.height ?? 0
   expect(backToCompact).toBeLessThan(full)
 })
 
 test('one conversation: it survives moving between modules', async ({ page }) => {
-  await page.locator('#chat-input').fill('перевірка памʼяті чату')
+  await page.locator('#crow-input').fill('перевірка памʼяті чату')
   await page.locator('[data-action="send-crow"]').tap()
-  await expect(page.locator('.msg-user')).toContainText('перевірка памʼяті чату')
-  await expect(page.locator('.msg-agent')).toBeVisible()
+  await expect(page.locator('.msg-bubble--user')).toContainText('перевірка памʼяті чату')
+  await expect(page.locator('.msg-bubble--agent').last()).toBeVisible()
 
   await gotoModule(page, 'agents')
-  await expect(page.locator('#chat-window')).toHaveClass(/open/)
-  await expect(page.locator('.msg-user')).toContainText('перевірка памʼяті чату')
+  await expect(page.locator('#crow-chat-window')).toHaveClass(/open/)
+  await expect(page.locator('.msg-bubble--user')).toContainText('перевірка памʼяті чату')
 })
 
 test('closing the chat does not wipe what I was typing', async ({ page }) => {
-  await page.locator('#chat-input').fill('недописана думка')
-  await swipeY(page, '#chat-handle', 200, 340)   // swipe down closes
+  await page.locator('#crow-input').fill('недописана думка')
+  await swipeY(page, '#crow-chat-handle', 200, 340)   // swipe down closes
   await gotoModule(page, 'projects')
-  await expect(page.locator('#chat-input')).toHaveValue('недописана думка')
+  await expect(page.locator('#crow-input')).toHaveValue('недописана думка')
 })
 
 test('Crow greets each module in its own words', async ({ page }) => {
@@ -133,13 +133,13 @@ test('THE CONTROL CASE: ask about a blocker with a pronoun and Crow knows which 
   await page.locator('[data-action="toggle-blocker"]').first().tap()
 
   // The envelope is visible to Roman too, so it is checkable rather than magic.
-  await page.locator('#chat-input').tap()
+  await page.locator('#crow-input').tap()
   await expect(page.locator('#chat-context')).toContainText('Окремі ключі для клієнтів')
 
-  await page.locator('#chat-input').fill('А чого це заблоковано?')
+  await page.locator('#crow-input').fill('А чого це заблоковано?')
   await page.locator('[data-action="send-crow"]').tap()
 
-  const reply = page.locator('.msg-agent').last()
+  const reply = page.locator('.msg-bubble--agent').last()
   await expect(reply).toContainText('Окремі ключі для клієнтів')
   await expect(reply).toContainText('Roman AI OS / GBrain')
   await expect(reply).toContainText('Чекає на: Роман')
@@ -151,9 +151,9 @@ test('one object, one id: the same blocker reached from Control', async ({ page 
   await expect(page.locator('#screen-projects')).toHaveClass(/active/)
   await expect(page.locator('#chat-context')).toContainText('Окремі ключі для клієнтів')
 
-  await page.locator('#chat-input').fill('Чому?')
+  await page.locator('#crow-input').fill('Чому?')
   await page.locator('[data-action="send-crow"]').tap()
-  await expect(page.locator('.msg-agent').last()).toContainText('Hermes і Claude ділять один токен')
+  await expect(page.locator('.msg-bubble--agent').last()).toContainText('Hermes і Claude ділять один токен')
 })
 
 test('the source of every number is stated on screen', async ({ page }) => {

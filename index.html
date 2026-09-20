@@ -52,9 +52,31 @@
 <!-- Module screens are injected here, one .screen each. -->
 <main id="screens"></main>
 
-<!-- The single Crow chat: window above, input bar below. Fixed to the viewport
-     so the keyboard can lift it without the page moving underneath. -->
-<div id="crow-dock"></div>
+<!-- The single Crow chat.
+     Structure copied from NeverMind (index.html:696-720): the bar is a fixed
+     column holding the chat window on top and the input box underneath, and
+     only those two children take touches. One bar, not one per tab — Roma OS
+     has a single conversation. -->
+<div id="crow-ai-bar" class="ai-bar-new">
+  <div class="ai-bar-chat-window" id="crow-chat-window">
+    <div class="ai-bar-chat-handle" id="crow-chat-handle" aria-label="Потягни щоб згорнути"></div>
+    <div class="chat-context" id="chat-context"></div>
+    <div class="ai-bar-messages" id="crow-chat-messages" role="log"></div>
+  </div>
+  <div class="ai-bar-input-box" id="crow-input-box">
+    <button class="ai-bar-icon-btn" data-action="pick-chat-image" title="Фото" aria-label="Фото">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    </button>
+    <textarea id="crow-input" rows="1" placeholder="Скажи Crow…"
+      maxlength="500" enterkeyhint="send" data-on-enter="send-crow"></textarea>
+    <button class="ai-bar-icon-btn voice-btn" id="crow-mic-btn" data-action="crow-voice" aria-label="Голосовий ввід" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+    </button>
+    <button class="ai-bar-send-btn" id="crow-send-btn" data-action="send-crow" aria-label="Надіслати">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+    </button>
+  </div>
+</div>
 
 <nav id="tab-bar" aria-label="Навігація"></nav>
 
