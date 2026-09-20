@@ -169,7 +169,7 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
   display: flex; align-items: flex-start; gap: 8px;   /* the bubble keeps its content height; the figure is fitted to it */
   touch-action: none;   /* .owl-speech — the swipe is ours, not the page's */
 }
-/* Clipped only while it moves or sits collapsed; at rest the tilted figure may overhang. */
+/* Clipped only while it moves or sits collapsed. */
 .crow-expanded.is-moving, #crow-zone[data-state="collapsed"] .crow-expanded { overflow: hidden; }
 /* Baseline of the two states. During a drag the heights are inline pixels;
    after it settles the stylesheet describes the state again. */
@@ -178,11 +178,12 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
 /* While the finger holds the board, the screen's top follows it frame by frame. */
 .crow-dragging .screen { transition: none; }
 
-/* The character: as tall as the bubble, tilted a little. The slot is as wide
+/* The character: as tall as the bubble, upright (--crow-tilt is 0; a lean read
+   as crooked on the phone, 20.09). The slot is as wide
    as the widest pose at that height, so a pose change never moves the bubble. */
 .crow-figure {
   --crow-figure-h: 96px;
-  --crow-tilt: 10deg;
+  --crow-tilt: 0deg;
   position: relative; flex: 0 0 auto; align-self: flex-end;
   height: var(--crow-figure-h);
   display: flex; align-items: flex-end; justify-content: center;
@@ -260,7 +261,7 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
   border: 1px solid var(--border); border-radius: var(--r-lg);
   box-shadow: var(--shadow);
 }
-.crow-collapsed img { width: 40px; height: 44px; object-fit: contain; object-position: bottom; transform: rotate(-8deg); }
+.crow-collapsed img { width: 40px; height: 44px; object-fit: contain; object-position: bottom; }
 .crow-collapsed-text {
   flex: 1; min-width: 0; font-size: 13px; font-weight: 600; color: var(--text);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
