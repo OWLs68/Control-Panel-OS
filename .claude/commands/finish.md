@@ -110,6 +110,9 @@ git fetch origin main && git rev-parse origin/main   # чи зсунувся в�
 
 ### Метрики
 Branch: · Start HEAD: · Work end HEAD: · Commits: · CI: · Deploy:
+
+Ні HEAD, ні номер прогону CI в метриках не фіксуються як канонічні —
+`/start` бере і те, і те фактично. Тут — тільки підсумок словами.
 ```
 
 UPDATE-режим дописує в цей самий блок, новий не створює.

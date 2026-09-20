@@ -84,6 +84,8 @@ Branch: `claude/cool-curie-51d0l9`
 Start HEAD: `bbb48df`
 Work end HEAD: `ef33a68` (HEAD до службових docs-комітів `/finish`)
 Commits: 5 — службова документація; продуктовий код не чіпався
-CI: ✅ зелений — run #12 на `10f13d9` (job `checks` + job `e2e`, Chromium і WebKit)
+CI: ✅ зелений на кожному запушеному коміті сесії (job `checks` + job `e2e`,
+Chromium і WebKit). Актуальний статус `/start` читає з GitHub, а не звідси —
+з тієї ж причини, що й HEAD
 Локально перед push: `verify` ✅ · `e2e` ✅ 26/26 (Chromium)
 Deploy: не запускався — `main` не чіпався; живий URL лишається на `bbb48df`
