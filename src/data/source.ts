@@ -61,14 +61,19 @@ export function applyDataSource(): void {
 
 export function setupDataSourceRefresh(): void {
   const refresh = () => {
-    if (getDataSource() !== 'live' || document.visibilityState !== 'visible') return
+    if (getDataSource() !== 'live') return
     const url = getGatewayUrl()
     if (url) void refreshLive(url)
   }
+  // Only while the app is on screen: nothing polls from the background.
+  const refreshIfVisible = () => { if (document.visibilityState === 'visible') refresh() }
+  // A page being shown is visible by definition (bfcache restores fire this
+  // without a visibilitychange), so no visibility check here — only the gap
+  // that keeps the first load from fetching twice.
   window.addEventListener('pageshow', () => {
     if (Date.now() - liveStatus().lastAttemptAt < PAGESHOW_MIN_GAP_MS) return
     refresh()
   })
-  document.addEventListener('visibilitychange', refresh)
-  setInterval(refresh, REFRESH_EVERY_MS)
+  document.addEventListener('visibilitychange', refreshIfVisible)
+  setInterval(refreshIfVisible, REFRESH_EVERY_MS)
 }
