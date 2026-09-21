@@ -1,13 +1,9 @@
 # /start — старт сесії Roma OS
 
-Перша команда в кожному новому чаті. Один виклик — і є мінімальний, але
-достатній контекст, щоб говорити по суті.
+Перша команда в кожному новому чаті. Мінімальний, але достатній контекст,
+щоб говорити по суті. Не читати весь репозиторій наперед.
 
 **Без аргументів.** Просто `/start`.
-
-**Принцип:** спочатку мінімальний контекст, глибший — тільки коли задача
-його вимагає. Не читати весь репозиторій і не тягнути 100+ КБ документації
-наперед.
 
 ---
 
@@ -15,63 +11,78 @@
 
 ### 1. `CLAUDE.md` — повністю, перший Read у сесії
 
-Не «він і так у контексті як project instructions». Активно прочитати файл
-цілком. Якщо перший Read сесії не `CLAUDE.md` — правило порушено.
+Активно прочитати файл цілком, не покладатись на копію в контексті.
 
-### 2. `docs/roma-os/HANDOFF.md` → блок «ПОТОЧНИЙ СТАН»
+### 2. Хвости попередніх сесій — підтягнути, перш ніж читати стан
 
-Тільки цей блок — перша секція файлу (`## ПОТОЧНИЙ СТАН`), до наступного
-`---`. Решта HANDOFF — стабільний бриф (що будуємо, що брати з NeverMind,
-критерії Етапу 1); читається за потреби, а не щоразу.
-
-### 3. `docs/roma-os/SESSION_LOG.md` → останній блок
-
-Від початку файлу до **другого** заголовка `## ` — це остання сесія.
-Глибше не читати.
-
-### 4. `docs/roma-os/ISSUES.md` → тільки `open`
-
-Відкриті записи й усе з `priority: critical`. Закриті (`fixed`/`verified`/
-`wontfix`) на старті не потрібні.
-
-### 5. Git — фактичний стан
+`/finish` пише документи на **свою** гілку і в `main` не мерджить. Тому
+найсвіжіший стан може лежати не в `main`, а на гілці попередньої сесії.
+Не підтягнути — читати застарілий `HANDOFF.md`.
 
 ```bash
-git branch --show-current
-git rev-parse HEAD
-git status --short
+git fetch -q origin main 'refs/heads/claude/*:refs/remotes/origin/claude/*'
+for b in $(git for-each-ref --format='%(refname:short)' refs/remotes/origin/claude/); do
+  git merge-base --is-ancestor "$b" origin/main && continue          # уже в main
+  [ -z "$(git log --oneline origin/main.."$b")" ] && continue          # порожня
+  if [ -z "$(git diff --stat origin/main..."$b" -- . ':!docs' ':!CLAUDE.md' ':!.claude' ':!README.md')" ]; then
+    echo "DOCS-TAIL: $b"      # лише документи → влити
+  else
+    echo "CODE-TAIL: $b"      # є продуктовий код → НЕ вливати, назвати в звіті
+  fi
+done
+```
+
+`DOCS-TAIL` → влити в поточну гілку **і** в `main` merge-комітом
+(документи не потребують перевірок; HOT RULE 3), push обох. `CODE-TAIL` →
+не чіпати, сказати Роману.
+
+### 3. `docs/roma-os/HANDOFF.md` → тільки блок «ПОТОЧНИЙ СТАН»
+
+Рівно від `## ПОТОЧНИЙ СТАН` до наступного рядка `---`, не далі:
+
+```bash
+awk '/^## ПОТОЧНИЙ СТАН/{p=1;next} p&&/^---$/{exit} p' docs/roma-os/HANDOFF.md
+```
+
+### 4. `docs/roma-os/SESSION_LOG.md` → останній блок
+
+Від першого `## ` до другого `## ` (разом із його «### Доповнення»):
+
+```bash
+awk '/^## /{c++} c==2{exit} c>=1' docs/roma-os/SESSION_LOG.md
+```
+
+### 5. `docs/roma-os/ISSUES.md` → тільки відкриті
+
+```bash
+grep -n -E '^### ISS-|status:|priority:' docs/roma-os/ISSUES.md | grep -B1 -A1 -E 'open|fixed|critical'
+```
+
+### 6. Git — фактичний стан
+
+```bash
+git branch --show-current; git rev-parse --short HEAD; git status --short
 git log --oneline -5
-git fetch origin main && git rev-parse origin/main
+git rev-parse --short origin/main
 git merge-base --is-ancestor HEAD origin/main && echo "HEAD вже в main"
 git ls-remote --heads origin "$(git branch --show-current)"
 ```
 
-Останні два рядки важливі: робоча гілка може бути вже змержена в `main`
-(тоді `git log <гілка> --not main` покаже нуль комітів і збреше), або ще
-не існувати на remote.
+### 7. CI і deploy — по одному запиту, по одному прогону
 
-### 6. CI поточної гілки
+`mcp__github__actions_list` → `list_workflow_runs`:
+- `resource_id: ci.yml`, `workflow_runs_filter: {"branch": "main"}`, **`perPage: 1`**
+- `resource_id: deploy.yml`, той самий фільтр, `perPage: 1`
 
-`mcp__github__actions_list` → `list_workflow_runs`, `resource_id: ci.yml`,
-фільтр по гілці. `success` / `failure` / прогону не було.
-Якщо червоний — `mcp__github__get_job_logs` з `failed_only` і назвати
-конкретний крок.
-
-### 7. Останній deploy `main`
-
-`resource_id: deploy.yml`, гілка `main`. Звірити `head_sha` прогону
-з `origin/main`: якщо не збігається — живий URL відстає від `main`.
+`per_page` (з підкресленням) і фільтр `head_sha` інструмент ігнорує і
+віддає всі прогони — це 6–12 тис. токенів за раз. Тільки `perPage`.
+Червоний CI → `get_job_logs` з `failed_only: true`, `tail_lines: 80`.
+Deploy: звірити `head_sha` з `origin/main` — не збігається, живий URL відстає.
 
 ### 8. `.claude/.session-runtime.json`
 
-Файл gitignored — це службові метадані сесії, не продукт. Створювати
-**без** «РОБИ». Якщо вже існує — **не перезаписувати**, узяти той самий
-`session_id`.
-
-Успішний `/finish` видаляє цей файл. Тому файл, що лишився, означає рівно
-одне: попередній `/finish` не дійшов до кінця (обірвався або CI був
-червоний). Це не привід починати нову сесію поверх — спершу доробити ту,
-чий `session_id` у файлі.
+Gitignored. Якщо є — **не перезаписувати**: попередній `/finish` не дійшов
+до кінця, доробити ту сесію. Немає → створити:
 
 ```bash
 mkdir -p .claude
@@ -90,61 +101,44 @@ fi
 cat .claude/.session-runtime.json
 ```
 
-`session_id` = `YYYYMMDD-HHMM-<суфікс гілки>` (для `claude/cool-curie-51d0l9`
-суфікс `51d0l9`; для `main` — `main`).
+Поточний HEAD із документів не читається ніколи — тільки з git.
 
-`start_head` і `start_main` фіксуються тут і дублюються в «ПОТОЧНИЙ СТАН».
-А **поточний HEAD із документів не читається ніколи** — тільки фактично,
-`git rev-parse HEAD` з кроку 5. Документ, який сам комітиться, не може
-містити хеш власного коміту.
+### 9. HOT RULES — останнім, перед першою реплікою
 
-### 9. HOT RULES — останнім
-
-Перечитати секцію `HOT RULES` з `CLAUDE.md` **перед** першою реплікою, щоб
-правила були в свіжій пам'яті, а не десь на початку контексту.
+`sed -n '/^## HOT RULES/,/^---/p' CLAUDE.md`
 
 ---
 
-## B. ЗА ПОТРЕБОЮ — тільки коли задача цього вимагає
+## B. ЗА ПОТРЕБОЮ — тільки коли задача вимагає
 
-| Джерело | Коли читати |
+| Джерело | Коли |
 |---|---|
-| `docs/roma-os/STAGE-0.md` | задача зачіпає продуктове або архітектурне рішення |
-| `docs/roma-os/STAGE-1.md` | релевантні секції поточного етапу |
-| `docs/roma-os/PORTING.md` | задача про UI/UX/механіку, яка може вже бути в NeverMind |
-| `docs/roma-os/mockup.html` | задача про композицію екрана |
-| код NeverMind | тільки під конкретний компонент, після `PORTING.md` |
+| `STAGE-0.md` | продуктове чи архітектурне рішення |
+| `STAGE-1.md` | релевантні секції етапу, чеклісти для телефона |
+| `PORTING.md` | будь-який UI-компонент, що є в NeverMind |
+| `GATEWAY.md` | живі дані, gateway, Tailscale, GBrain |
+| `mockup.html` | композиція екрана |
+| код NeverMind | під конкретний компонент, після `PORTING.md` |
 
 NeverMind клонується читанням, не редагується:
-
-```bash
-GIT_LFS_SKIP_SMUDGE=1 git clone --depth 1 \
-  https://github.com/OWLs68/NeverMind /home/user/owls68/nevermind
-```
+`GIT_LFS_SKIP_SMUDGE=1 git clone --depth 1 https://github.com/OWLs68/NeverMind /home/user/owls68/nevermind`
 
 ---
 
-## C. Відповідь Роману — 8–10 рядків, не більше
+## C. Відповідь Роману — 8–10 рядків
 
-Українською. Технічні англійські терміни — з поясненням у дужках.
+Українською, технічні терміни з поясненням у дужках. Час — Романа (UTC+2),
+не UTC.
 
-1. Де зупинились (один рядок з «ПОТОЧНИЙ СТАН» + остання сесія)
-2. `Branch: … · HEAD: … ` (+ «вже в main», якщо так)
-3. `CI: ✅/⚠️ …`
-4. `Live: ✅/⚠️ …` (deploy `main` і чи він на поточному `main`)
-5. Найважливіший blocker або `open` issue — одним реченням
-6. 3–4 логічні варіанти наступної роботи, нумеровано
+1. Де зупинились (рядок зі стану + остання сесія)
+2. `Branch: … · HEAD: …` (+ «вже в main»), влиті хвости, якщо були
+3. `CI: ✅/⚠️ …` 4. `Live: ✅/⚠️ …`
+5. Найважливіший blocker або `open` issue
+6. 3–4 варіанти наступної роботи, нумеровано
 7. «Що робимо?»
-
-Якщо CI червоний — окремим рядком і варіантом «полагодити CI».
-
----
 
 ## D. STOP
 
-Після відповіді **зупинитись**. Не чіпати продуктовий код (`src/`,
-`index.html`, `style.css`, `sw.js`, `build.js`, тести, workflow) без явного
-**«РОБИ»** від Романа.
-
-Дозволено без «РОБИ» тільки `.claude/.session-runtime.json` — це метадані
-сесії, а не зміна продукту.
+Після відповіді зупинитись. Продуктовий код — тільки після явного
+**«РОБИ»**. Без «РОБИ» дозволено лише `.claude/.session-runtime.json`
+і вливання docs-хвостів із кроку 2.
