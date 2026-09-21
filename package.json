@@ -2,6 +2,9 @@
   "name": "roma-os",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "server/roma-gateway"
+  ],
   "type": "module",
   "description": "Roma OS — інтерфейс-оболонка операційної системи Roman AI OS (PWA)",
   "scripts": {

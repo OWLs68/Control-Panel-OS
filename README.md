@@ -59,6 +59,7 @@ src/
 docs/roma-os/         HANDOFF, STAGE-0, мокап, зображення Crow
 scripts/              сторож кордону, статичний сервер, smoke-тест деплою
 tests/                unit/ + e2e/
+server/roma-gateway/  окремий сервіс для Mac: телефон → GBrain, лише читання (docs/roma-os/GATEWAY.md)
 ```
 
 ## Правила, які тримають цю збірку

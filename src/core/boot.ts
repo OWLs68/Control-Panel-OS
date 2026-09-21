@@ -14,6 +14,7 @@
 import { initDelegation } from './delegation.js'
 import { initTouchDetect } from './touch.js'
 import { seedFixtures } from '../data/seed.js'
+import { applyDataSource, setupDataSourceRefresh } from '../data/source.js'
 import { setupShell } from '../nav/shell.js'
 import { setupKeyboardAvoiding } from '../crow/keyboard.js'
 import { setupVoiceInput } from '../crow/voice.js'
@@ -28,6 +29,8 @@ import { registerEvents } from '../modules/events.js'
 export function boot(): void {
   registerModules()
   seedFixtures()
+  // Demo or live, decided before the first screen draws.
+  applyDataSource()
 
   initDelegation()
   initTouchDetect()
@@ -50,6 +53,7 @@ export function boot(): void {
   setupVoiceInput()
   setupDeployInfo()
   setupSettings()
+  setupDataSourceRefresh()
 
   // Web fonts change the bars' height when they land, so measure once more.
   if (document.fonts?.ready) void document.fonts.ready.then(measureChrome)
