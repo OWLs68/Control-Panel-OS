@@ -81,9 +81,11 @@ test('preflight for our origin is 204; for a stranger 403', async () => {
   assert.equal(bad.status, 403)
 })
 
-test('crow is a 501 placeholder behind the same identity check', async () => {
+test('without Hermes configured, crow is a 501 seam behind the same identity check', async () => {
   assert.equal((await fetch(`${base}/api/v1/crow`, { method: 'POST' })).status, 403)
-  assert.equal((await fetch(`${base}/api/v1/crow`, { method: 'POST', headers: { 'tailscale-user-login': LOGIN } })).status, 501)
+  const res = await fetch(`${base}/api/v1/crow`, { method: 'POST', headers: { 'tailscale-user-login': LOGIN } })
+  assert.equal(res.status, 501)
+  assert.equal((await res.json() as { error: string }).error, 'not_implemented')
 })
 
 test('when GBrain fails the answer is 502, never a fake snapshot', async () => {

@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "description": "Roma gateway — the one door from the phone to GBrain: read-only, behind Tailscale, on the Mac.",
-  "engines": { "node": ">=22.18" },
+  "engines": {
+    "node": ">=22.18"
+  },
   "scripts": {
     "start": "node --env-file-if-exists=.env src/index.ts",
     "lint": "eslint --config ../../eslint.config.js .",
@@ -14,5 +16,9 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.20.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.1",
+    "ws": "^8.21.3"
   }
 }

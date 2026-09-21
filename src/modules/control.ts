@@ -11,6 +11,7 @@ import { count, plural } from '../core/plural.js'
 import { reg } from '../core/delegation.js'
 import { getAdapter } from '../data/adapters.js'
 import type { Attention, Severity } from '../data/types.js'
+import { getGateway } from '../hermes/gateway.js'
 import { icons, type IconName } from '../ui/icons.js'
 import { badge, card, cardHead, dot, empty, metric, row, sourceTag } from '../ui/primitives.js'
 import { registerModule, type ModuleContext } from './registry.js'
@@ -27,6 +28,8 @@ function render(root: HTMLElement): void {
   const agents = adapter.agents()
   const projects = adapter.projects()
   const events = adapter.events(4)
+  // Live or stub is the gateway's word, not the adapter's: the two are switched together.
+  const crowLive = getGateway().mode === 'live'
 
   const working = agents.value.filter((a) => a.task !== null)
   const activeProjects = projects.value.filter((p) => p.status === 'active')
@@ -70,9 +73,9 @@ function render(root: HTMLElement): void {
       [
         row({
           title: 'Hermes',
-          sub: 'Gateway ще не підключений — інтерфейс працює на заглушці',
-          lead: dot('warning'),
-          trailing: badge('заглушка', 'warning'),
+          sub: crowLive ? 'Crow іде через gateway на Mac до Hermes' : 'Gateway ще не підключений — інтерфейс працює на заглушці',
+          lead: dot(crowLive ? 'success' : 'warning'),
+          trailing: badge(crowLive ? 'наживо' : 'заглушка', crowLive ? 'success' : 'warning'),
           action: 'ask-crow',
           data: { text: 'Що з Hermes?' },
         }),
@@ -206,7 +209,7 @@ function context(): ModuleContext {
     visibleState: [
       `${count(attention.length, 'річ потребує', 'речі потребують', 'речей потребує')} Романа`,
       `${count(working.length, 'агент', 'агенти', 'агентів')} у роботі`,
-      'Hermes: заглушка, реального gateway немає',
+      getGateway().mode === 'live' ? 'Hermes: наживо, Crow іде через gateway' : 'Hermes: заглушка, реального gateway немає',
     ],
     blockers: attention.map((a) => `${a.title} (${a.risk}): ${a.detail}`),
   }

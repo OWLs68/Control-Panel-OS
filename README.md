@@ -20,7 +20,7 @@ IIFE-бандл, один `index.html`, один service worker.
 | Збірка | esbuild (`node build.js` → `dist/`) |
 | Мова | TypeScript, strict |
 | Стан | localStorage за доменами, конверт сутності з UUID v7 |
-| Агент | Crow в інтерфейсі, Hermes як runtime під капотом (поки заглушка) |
+| Агент | Crow в інтерфейсі, Hermes як runtime під капотом — наживо через Roma gateway, або заглушка в демо |
 | Тести | `node --test` (юніт) + Playwright на viewport iPhone |
 | Деплой | GitHub Pages, тільки з `main` |
 
@@ -59,7 +59,7 @@ src/
 docs/roma-os/         HANDOFF, STAGE-0, мокап, зображення Crow
 scripts/              сторож кордону, статичний сервер, smoke-тест деплою
 tests/                unit/ + e2e/
-server/roma-gateway/  окремий сервіс для Mac: телефон → GBrain, лише читання (docs/roma-os/GATEWAY.md)
+server/roma-gateway/  окремий сервіс для Mac: телефон → GBrain (читання) і → Hermes (Crow) (docs/roma-os/GATEWAY.md)
 ```
 
 ## Правила, які тримають цю збірку
@@ -73,7 +73,8 @@ server/roma-gateway/  окремий сервіс для Mac: телефон →
 
 **Один кордон до агента.** Усе, що йде до Crow, проходить через `askCrow`
 у `src/hermes/gateway.ts`. `scripts/check-gateway-boundary.mjs` стежить за цим
-у CI. Заміна заглушки на реальний Hermes — зміна однієї функції.
+у CI. У режимі «Наживо» `askCrow` шле `POST /api/v1/crow` на Roma gateway,
+який один розмовляє з Hermes на Mac; у «Демо» відповідає заглушка.
 
 **Один чат.** Не вісім, як у NeverMind. Одна історія, одна сесія, глобальний
 стан; де саме Роман зараз — передається структурованим UI context envelope
