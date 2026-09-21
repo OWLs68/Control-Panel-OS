@@ -25,40 +25,62 @@
 - **branch:** `claude/new-session-nouemk`
 - **start_head:** `e33f34a`
 - **start_main:** `e33f34a`
-- **work_end_head:** _зріз 1 живих даних — сесія триває_
+- **work_end_head:** _зріз 1 живих даних завершений; external integration триває_
+- **interim_checkpoint:** `2026-09-21` — Mac/Tailscale/GBrain live-data setup
 
-**Де зупинились.** Після `bcd2894` (налаштування, поява карток, аудит — усе в
-`main`, деплой 22) зроблено **перший вертикальний зріз живих даних**:
-`server/roma-gateway/` (окремий npm workspace, Node 22, `127.0.0.1:8787`,
-ідентичність — `Tailscale-User-Login`, CORS лише на наш origin, `recall`
-без `query`, лише читання, 21 тест); у застосунку — `fetchSnapshot` в
-`gateway.ts` (сторож кордону не послаблений), композитний `liveAdapter`
-(Памʼять наживо, решта демо), перемикач `roma_data_source` +
-`roma_gateway_url`, кеш `roma_live_snapshot` (лише нормалізований знімок),
-рядок «Джерело даних» за донором (пілюлі + поле), чесні тексти Памʼяті. GBrain
-0.51 перевірено read-only: `recall` = детермінований recent feed, поля
-факту реальні. Локально: `verify` ✅ (22 unit), gateway ✅ (21), e2e ✅ 56/56.
-Документ: `docs/roma-os/GATEWAY.md`.
+**Де зупинились.** Перший вертикальний зріз живих даних уже є в коді:
+`server/roma-gateway/` + frontend live Memory adapter. Код/CI цього зрізу
+раніше пройшов перевірки. 21.09 почато реальне підключення:
+`GitHub Pages PWA → Tailscale Serve → local Roma gateway → local GBrain`.
 
-**Blockers.** Немає в коді. Приймання на телефоні чекає трьох зовнішніх
-кроків Романа (нижче).
+**Зроблено 21.09 поза кодовою сесією.**
+- Tailscale 1.102.4 встановлений і підключений на Mac.
+- `tailscale serve --help` перевірено на фактичній версії;
+  `tailscale serve status` = **No serve config**.
+- GBrain MCP endpoint підтверджено на `http://127.0.0.1:3131/mcp`.
+- Створено окремий `roma-gateway` bearer credential зі scope **read**.
+  Значення token у repo/docs не зберігати.
+- GBrain serve після цього знову запущений; PGLite lock вручну не чіпали.
+- Repo клоновано локально в `~/Control-Panel-OS`.
+- `server/roma-gateway/.env` створено локально з `.env.example` і
+  підтверджено як gitignored (`!!`). У ньому: Tailscale allowlist,
+  exact GitHub Pages origin, `GBRAIN_MCP_URL=http://127.0.0.1:3131/mcp`,
+  `GBRAIN_MCP_TRANSPORT=streamable`, окремий read-only `GBRAIN_TOKEN`.
+  Не фіксувати login/email/private IP/token у документах.
+- Встановлено Node **v22.23.2** + npm **10.9.8**.
+- У локальному clone виконано `npm ci`: 205 packages, **0 vulnerabilities**.
 
-**Наступний крок.** Роман: (1) `tailscale version` + `tailscale serve --help`
-на Mac — команду Serve записати в `GATEWAY.md §9`; (2) окремий read-only
-клієнт GBrain для gateway → `GBRAIN_TOKEN` у `.env`; (3) запустити gateway,
-опублікувати через Serve, у налаштуваннях — «Наживо» + адреса;
-`STAGE-1.md §6.4`. Далі — зріз 2 (`GATEWAY.md §11`).
+**Security boundary.** Repo може лишатися public: secrets тільки в локальному
+`.env`, який gitignored. PWA не отримує `GBRAIN_TOKEN`. Roma OS не має
+використовувати Funnel/ngrok для gateway: цільовий live path — лише Tailscale
+Serve. GBrain/Hermes напряму публічно не виставляти.
 
-**Чого не чіпати.** NeverMind і Drive — read-only; `PORTING.md §4`;
-Hermes-конфіг, Docker, GBrain server; `main` — merge-комітом після зелених
-локальних перевірок (HOT RULE 3). Tailscale і GBrain-credential — лише Роман
-руками.
+**Blocker.** Немає blocker у коді. External acceptance ще не завершений:
+gateway ще не запускався після локальної конфігурації; Serve ще не
+налаштований; iPhone acceptance ще не пройдений.
 
-**Чекає рішення Романа.**
-1. Три зовнішні кроки вище і результат `STAGE-1.md §6.4`, потім `§6.2–6.3`
-2. `style.css` — 1241 рядок: різати чи ні
-3. Патчі команд `/start` і `/finish` (чекають «так», див. журнал сесії)
-4. Капсула барабана; відмітки в `STAGE-0.md`; `STAGE-1.md §8`
+**Точний наступний крок.** У локальному `~/Control-Panel-OS` запустити:
+
+`PATH="/usr/local/opt/node@22/bin:$PATH" npm run start --workspace server/roma-gateway`
+
+Потім по одному: local health → authenticated `/api/v1/state` → Tailscale
+Serve на 8787 → iPhone Tailscale → Roma OS «Наживо» → real acceptance test.
+
+**Process rule.** У довгих технічних сесіях робити проміжні checkpoints, а не
+чекати лише кінця: після кількох material steps, architecture/security
+рішень, тестів, blocker'ів або коли чат наближається до переповнення.
+Checkpoint = done + verified + unresolved + exact next step + важливі
+paths/commands, без secrets.
+
+**Чого не чіпати.** NeverMind і Drive architecture docs — read-only для
+кодових сесій; Hermes-конфіг/Docker без окремого рішення; GBrain DB/locks
+вручну не чіпати; secrets не комітити.
+
+**Чекає рішення/виконання Романа.**
+1. Завершити external acceptance chain вище.
+2. `style.css` — 1241 рядок: різати чи ні.
+3. Патчі команд `/start` і `/finish`.
+4. Капсула барабана; відмітки в `STAGE-0.md`; `STAGE-1.md §8`.
 
 ---
 
