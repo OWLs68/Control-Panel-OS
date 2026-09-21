@@ -11,6 +11,8 @@
  * shapes the real gateway will have to speak; the stub answers them locally.
  */
 
+import type { MemoryFact } from '../data/types.js'
+
 /** What Crow is told about where Roman is standing when he asks something. */
 export interface UiContext {
   /** Active module id, e.g. 'projects'. */
@@ -77,6 +79,17 @@ export class GatewayError extends Error {
     this.name = 'GatewayError'
     this.kind = kind
   }
+}
+
+/**
+ * What GET /api/v1/state carries. Only what is really live: in the first
+ * slice that is memory. Keys that are absent stay demo on the phone.
+ */
+export interface LiveSnapshot {
+  memory: MemoryFact[]
+  fetchedAt: number
+  /** The gateway's own name for where the facts came from, e.g. 'gbrain:recall'. */
+  source: string
 }
 
 /** Every gateway — stub or real — satisfies exactly this. */

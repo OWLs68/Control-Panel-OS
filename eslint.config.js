@@ -9,13 +9,29 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  { ignores: ['dist/**', '.tmp/**', 'node_modules/**', 'docs/roma-os/mockup.html'] },
+  { ignores: ['dist/**', '.tmp/**', '**/node_modules/**', 'docs/roma-os/mockup.html'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
     files: ['src/**/*.ts'],
     languageOptions: {
       globals: { ...globals.browser },
+      parserOptions: { ecmaVersion: 2022, sourceType: 'module' },
+    },
+    rules: {
+      'no-var': 'error',
+      'prefer-const': 'error',
+      eqeqeq: ['error', 'smart'],
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-explicit-any': 'error',
+    },
+  },
+  {
+    // The Roma gateway: a Node service in its own package, held to the same
+    // rules as the app. Its own `npm run lint` points at this file.
+    files: ['server/**/*.ts'],
+    languageOptions: {
+      globals: { ...globals.node },
       parserOptions: { ecmaVersion: 2022, sourceType: 'module' },
     },
     rules: {

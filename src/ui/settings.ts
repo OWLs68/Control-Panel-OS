@@ -17,6 +17,8 @@ import { count } from '../core/plural.js'
 import { clearHistory, historyLength } from '../crow/chat.js'
 import { isVoiceAvailable, isVoiceEnabled, setVoiceEnabled } from '../crow/voice.js'
 import { seedFixtures } from '../data/seed.js'
+import { getDataSource, getGatewayUrl, setDataSource, setGatewayUrl } from '../data/source.js'
+import { normalizeGatewayUrl } from '../hermes/gateway.js'
 import { openModules } from '../nav/shell.js'
 import { openCardModal, closeCardModal, type CardModalHandle } from './card-modal.js'
 import { deployLabel, hardRefresh, showDeployInfo } from './deploy-info.js'
@@ -57,6 +59,29 @@ export function setupSettings(): void {
 
   reg('settings-deploy-info', () => { close(); showDeployInfo() })
   reg('settings-refresh', () => { void hardRefresh() })
+
+  // Demo or live. The choice is a plain setting; the address is a hostname,
+  // not a secret, and it is the only thing the phone needs to know.
+  reg('settings-source', (data) => {
+    const next = data.source === 'live' ? 'live' : 'demo'
+    if (next === getDataSource()) return
+    setDataSource(next)
+    syncSourceRows()
+    showToast(next === 'live' ? 'Джерело: наживо, через gateway' : 'Джерело: демо')
+  })
+  // Saved on blur and on Enter, like the donor's fields; a second fire with
+  // the same value is a no-op, so Enter followed by the blur says it once.
+  reg('settings-gateway-save', (_data, el) => {
+    const input = el as HTMLInputElement
+    const raw = input.value.trim()
+    const cleaned = raw ? normalizeGatewayUrl(raw) : ''
+    if (cleaned !== null && cleaned === getGatewayUrl()) { input.value = cleaned; return }
+    if (!setGatewayUrl(raw)) { showToast('Адреса має починатись з https://'); return }
+    input.value = getGatewayUrl()
+    syncGatewayStatus()
+    showToast(raw ? 'Адресу збережено' : 'Адресу прибрано')
+    input.blur()
+  })
 }
 
 export function openSettings(): void {
@@ -85,11 +110,8 @@ export function openSettings(): void {
             action: 'settings-reset-demo', icon: icons.refresh, tone: 'ink',
             title: 'Скинути демо-дані', sub: 'Стартовий набір: агенти, проєкти, події', right: CHEVRON,
           })}
-          ${row({
-            icon: icons.cube, tone: 'ink',
-            title: 'Джерело даних', sub: 'Hermes ще не підключений',
-            right: '<span class="s-value">Демо</span>',
-          })}
+          ${sourceRow()}
+          ${gatewayRow()}
         </div>
 
         <div class="s-group-label">Застосунок</div>
@@ -168,6 +190,47 @@ function chatRow(): string {
     sub: n > 0 ? count(n, 'повідомлення', 'повідомлення', 'повідомлень') : 'Порожньо',
     right: CHEVRON,
   })
+}
+
+/** Demo ⇄ live — the donor's choice pills (currency/language rows) on the right. */
+function sourceRow(): string {
+  const live = getDataSource() === 'live'
+  const pill = (value: 'demo' | 'live', label: string, on: boolean) =>
+    `<button type="button" class="s-pill${on ? ' active' : ''}" data-action="settings-source" data-source="${value}" aria-pressed="${on}">${label}</button>`
+  return row({
+    id: 'settings-source-row', icon: icons.cube, tone: live ? 'amber' : 'ink',
+    title: 'Джерело даних',
+    sub: live ? 'Памʼять — з GBrain через gateway; решта поки демо' : 'Стартовий набір, локально',
+    right: `<span class="s-pill-group">${pill('demo', 'Демо', !live)}${pill('live', 'Наживо', live)}</span>`,
+  })
+}
+
+/** The gateway's address — the donor's API-key row: a stacked field with a status pill. Live only. */
+function gatewayRow(): string {
+  if (getDataSource() !== 'live') return ''
+  const url = getGatewayUrl()
+  return `<div class="s-row s-row-static s-row-column" id="settings-gateway-row">
+    <input class="settings-input" type="url" id="settings-gateway-url" value="${escapeHtml(url)}"
+      placeholder="https://mac…ts.net" aria-label="Адреса gateway"
+      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="url" enterkeyhint="done"
+      data-on-blur="settings-gateway-save" data-on-enter="settings-gateway-save">
+    <div class="key-status ${url ? 'has-key' : 'no-key'}" id="settings-gateway-status">${url ? 'Адресу задано' : '⚠️ Адресу не задано'}</div>
+  </div>`
+}
+
+function syncSourceRows(): void {
+  replaceRow('settings-source-row', sourceRow())
+  document.getElementById('settings-gateway-row')?.remove()
+  const extra = gatewayRow()
+  if (extra) document.getElementById('settings-source-row')?.insertAdjacentHTML('afterend', extra)
+}
+
+function syncGatewayStatus(): void {
+  const status = document.getElementById('settings-gateway-status')
+  if (!status) return
+  const url = getGatewayUrl()
+  status.className = `key-status ${url ? 'has-key' : 'no-key'}`
+  status.textContent = url ? 'Адресу задано' : '⚠️ Адресу не задано'
 }
 
 function syncVoiceRow(): void {

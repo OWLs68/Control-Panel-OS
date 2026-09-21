@@ -7,7 +7,7 @@
  */
 import { reg } from '../core/delegation.js'
 import { getSelection, setSelection } from '../core/selection.js'
-import { getAdapter } from '../data/adapters.js'
+import { getAdapter, mockAdapter } from '../data/adapters.js'
 import { icons } from '../ui/icons.js'
 import { badge, card, cardHead, dot, empty, progress, row, sourceTag } from '../ui/primitives.js'
 import { escapeHtml } from '../core/dom.js'
@@ -44,7 +44,7 @@ function render(root: HTMLElement): void {
           )
         }).join('')
       : card(cardHead('projects', 'Проєкти', sourceTag(projects)), empty('projects', 'Проєктів немає', 'Скажи Crow, над чим працюєш.'))}
-    <div class="data-notice">${icons.alert}<span>Джерело: ${escapeHtml(adapter.label)} · ${escapeHtml(projects.source)}</span></div>
+    <div class="data-notice">${icons.alert}<span>Джерело: ${escapeHtml(projects.origin === 'mock' ? mockAdapter.label : adapter.label)} · ${escapeHtml(projects.source)}</span></div>
   `
 }
 

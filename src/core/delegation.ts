@@ -27,6 +27,7 @@ export function initDelegation(): void {
   if (initialized || typeof document === 'undefined') return
   document.body.addEventListener('click', handleClick)
   document.body.addEventListener('keydown', handleEnter)
+  document.body.addEventListener('focusout', handleBlur)
   initialized = true
 }
 
@@ -49,5 +50,16 @@ function handleEnter(ev: KeyboardEvent): void {
   const fn = ACTIONS[name]
   if (!fn) return
   ev.preventDefault()
+  fn(t.dataset, t, ev)
+}
+
+/** `data-on-blur` on a field fires an action when it loses focus — the donor's save-on-blur. */
+function handleBlur(ev: FocusEvent): void {
+  const t = ev.target as HTMLElement | null
+  if (!t || !(t instanceof HTMLTextAreaElement || t instanceof HTMLInputElement)) return
+  const name = t.dataset.onBlur
+  if (!name) return
+  const fn = ACTIONS[name]
+  if (!fn) return
   fn(t.dataset, t, ev)
 }

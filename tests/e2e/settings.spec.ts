@@ -133,6 +133,40 @@ test('a swipe down from the handle closes the card; a swipe inside the list does
   await expect(page.locator('#settings-modal')).toHaveCount(0)
 })
 
+test('the data source row: demo by default, live reveals the address field, a bad address is refused', async ({ page }) => {
+  await openSettings(page)
+  const demo = page.locator('[data-action="settings-source"][data-source="demo"]')
+  const live = page.locator('[data-action="settings-source"][data-source="live"]')
+  await expect(demo).toHaveClass(/active/)
+  await expect(page.locator('#settings-gateway-row')).toHaveCount(0)
+
+  await live.tap()
+  await expect(live).toHaveClass(/active/)
+  const field = page.locator('#settings-gateway-url')
+  await expect(field).toBeVisible()
+  await expect(page.locator('#settings-gateway-status')).toContainText('Адресу не задано')
+
+  await field.fill('mac.tailnet.ts.net')
+  await field.press('Enter')
+  await expect(page.locator('.toast').last()).toContainText('Адреса має починатись з https://')
+  await expect(page.locator('#settings-gateway-status')).toContainText('Адресу не задано')
+
+  await field.fill('https://mac.tailnet.ts.net/')
+  await field.press('Enter')
+  await expect(page.locator('#settings-gateway-status')).toContainText('Адресу задано')
+  await expect(field).toHaveValue('https://mac.tailnet.ts.net')
+
+  // The choice and the address survive a reload; nothing else about the gateway is stored.
+  await page.reload()
+  await expect(page.locator('body')).toHaveAttribute('data-ready', '1')
+  expect(await page.evaluate(() => [localStorage.getItem('roma_data_source'), localStorage.getItem('roma_gateway_url')]))
+    .toEqual(['live', 'https://mac.tailnet.ts.net'])
+
+  await openSettings(page)
+  await demo.tap()
+  await expect(page.locator('#settings-gateway-row')).toHaveCount(0)
+})
+
 test('every settings row is a full-width target at least 52px tall', async ({ page }) => {
   await openSettings(page)
   const small = await page.locator('#settings-modal .s-row').evaluateAll((els) =>

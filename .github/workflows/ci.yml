@@ -42,6 +42,23 @@ jobs:
       - name: Guard the Hermes boundary
         run: node scripts/check-gateway-boundary.mjs
 
+  # The Roma gateway is its own package (server/roma-gateway): a Node service
+  # that never ships to Pages, checked here with its own lint, types and tests.
+  gateway:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Gateway — lint, types, tests
+        run: npm run verify --workspace server/roma-gateway
+
   e2e:
     runs-on: ubuntu-latest
     steps:
