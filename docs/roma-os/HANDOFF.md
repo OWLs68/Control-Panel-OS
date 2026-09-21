@@ -20,51 +20,70 @@
 > «поточний HEAD». Актуальний HEAD тут не зберігається взагалі: `/start`
 > бере його через `git rev-parse HEAD`.
 
-- **session_id:** `20260921-1337-dmm98t`
-- **started_at:** `2026-09-21T13:37:36Z`
-- **branch:** `claude/tender-shannon-dmm98t`
-- **start_head:** `915c4ee`
-- **start_main:** `915c4ee`
-- **work_end_head:** ще немає — зріз 2 Crow лежить у робочому дереві,
-  коміт і push чекають окремого дозволу Романа
+- **session_id:** `20260921-1738-xkbygw`
+- **started_at:** `2026-09-21T17:38:42Z`
+- **branch:** `claude/new-session-xkbygw`
+- **start_head:** `4808644`
+- **start_main:** `4808644`
+- **work_end_head:** `970717e` (= `main`; продуктового коду в сесії немає,
+  лише документи)
 
-**Де зупинились.** Зроблено **зріз 2: Crow наживо через Hermes**. Контракт
-Hermes узято не з голови, а з upstream `NousResearch/hermes-agent`
-(`tui_gateway/`): JSON-RPC 2.0 по WebSocket `ws://127.0.0.1:9119/api/ws?token=…`,
-`gateway.ready` → `session.create`/`session.resume` → `prompt.submit` →
-`message.delta`… → `message.complete`; усе записано в `GATEWAY.md §4`.
-У gateway: `hermes-protocol.ts` (кадри, envelope, seed), `hermes-client.ts`
-(один сокет, одна сесія, один хід; resume → один fallback на create; збирання
-дельт без повторів; таймаути; `session.interrupt` при обриві; heartbeat),
-`session-state.ts` (атомний файл 0600 поза репо), `token.ts` (лише шлях у
-`.env`, значення ніде не логується), `crow.ts` (валідація, ліміти, 400/405/
-409/413/502/504), `POST /api/v1/crow` реальний. У застосунку: `createLiveGateway`
-у `gateway.ts` (єдині двері з `fetch`), `applyDataSource()` перемикає gateway
-разом з адаптером, помилки → наявні kinds, чесні підписи на Control і в
-налаштуваннях. Тести: gateway 63 (фейковий Hermes на `ws`), unit 26,
-e2e +5 (`crow-live.spec.ts`). Реального Hermes у хмарній сесії немає — ланцюг
-DeepSeek/GBrain/VIOLET-624 доведений лише Романом на Mac.
+**Де зупинились.** **Зріз 2 «Crow наживо через Hermes» прийнято на Mac і на
+iPhone** (Роман, 21.09; ручне приймання поза репо). Код зрізу в `main` з
+`4808644` (сесія `dmm98t`, гілка `claude/tender-shannon-dmm98t`), на живому
+URL з деплою 29. Підтверджені Романом факти:
+- Crow у живій Roma AI OS працює через реальний ланцюг Roma Gateway → Hermes
+  → GBrain; на iPhone отримано `VIOLET-624` через реальний `recall` GBrain.
+- Після перезавантаження повторний запит повернув `JADE-919`.
+- Локальний контур стартує сам: GBrain, ngrok і Roma Gateway — macOS
+  LaunchAgents; Hermes — Docker-контейнер з `restart unless-stopped`; Docker
+  у «Відкривати під час входу в систему». Після чистого перезавантаження без
+  ручного запуску порти 3131, 4040, 8787, 9119 відповідають OK.
+- Token Hermes замінено після випадкового показу в діагностичному виводі.
+  Значення ніде не записано і не записувати (`GATEWAY.md §2`: у `.env` лише
+  шлях `HERMES_TOKEN_FILE`).
 
-**Blockers.** У коді немає. Коміт/push — за словом Романа. Приймання на
-телефоні — `STAGE-1.md §6.5` (потрібні `HERMES_TOKEN_FILE` у `.env`, Hermes
-на 9119, Serve).
+Репозиторій: `main` = `970717e` — merge-коміт docs-хвоста `nouemk`; конфлікт
+у цьому блоці вирішено на користь стану `dmm98t`. CI 78 ✅ і деплой 30 ✅ на
+`970717e`; CI 75 ✅ і деплой 29 ✅ на коді зрізу `4808644`. Цей блок і
+журнал переписано з підтверджених фактів docs-комітом на гілці
+`claude/new-session-xkbygw` — локально; push і мердж у `main` чекають
+окремого дозволу Романа. `ISSUES.md` і `STAGE-1.md` не чіпано:
+ISS-003/005/006/007 лишаються `fixed`, сьогоднішнє приймання їх не доводить.
 
-**Наступний крок.** Роман: (1) «коміт» → коміт і push гілки, мердж у `main`
-після зелених перевірок; (2) на Mac: `.env` з `HERMES_TOKEN_FILE`, запуск
-gateway, `curl` з `GATEWAY.md §8`, потім телефон за `STAGE-1.md §6.5`;
-(3) кроки зрізу 1, які ще відкриті (`tailscale serve`, read-токен GBrain).
-Далі — chips і priority з Hermes, `GATEWAY.md §12`.
+**Контекст співпраці (Роман, 21.09).** Паралельно з Claude Роман працює з
+GPT: архітектура, перевірка, планування, ручні тести на Mac/iPhone,
+інфраструктура. Claude Code відповідає за репозиторій; GPT лише читає й
+перевіряє, код і документи в репо змінює Claude. Між сесіями реальний стан
+може змінитись поза репо: підтверджені Романом результати новіші за цей блок
+і журнал; при суперечці спершу визначити, яке джерело новіше; завершені
+ручні кроки не повторювати; після значущого етапу оновлювати канонічні
+документи; при невизначеності — зупинитись і коротко спитати Романа.
+
+**Blockers.** Інфраструктурних немає (Роман, 21.09). У коді немає.
+
+**Наступний крок.** За словом Романа: (1) «push» цього docs-коміту і мердж у
+`main`; (2) документи під реальний контур — `GATEWAY.md §1–2, §9, §11`
+описують лише Tailscale Serve і ручний запуск, ngrok, LaunchAgents і Docker
+там ще немає; відмітки в `STAGE-1.md §6.4–6.5` за сьогоднішнім прийманням;
+(3) зріз 3 — chips і priority з Hermes, `GATEWAY.md §13` (після «РОБИ»).
 
 **Чого не чіпати.** NeverMind і Drive — read-only; `PORTING.md §4`;
-Hermes-конфіг і source, Docker, GBrain server; `main` — merge-комітом після
-зелених локальних перевірок (HOT RULE 3). Tailscale, token Hermes і
-GBrain-credential — лише Роман руками.
+Hermes-конфіг і source, Docker, LaunchAgents, ngrok, GBrain server; `main` —
+merge-комітом після зелених локальних перевірок (HOT RULE 3), у цій сесії —
+лише з окремого дозволу. Token Hermes і credential GBrain — лише Роман
+руками, значення в репо не потрапляють.
 
 **Чекає рішення Романа.**
-1. Дозвіл на коміт/push зрізу 2 Crow
-2. Приймання на телефоні `STAGE-1.md §6.4–6.5`, потім `§6.2–6.3`
-3. `style.css` — 1241 рядок: різати чи ні
-4. Капсула барабана; відмітки в `STAGE-0.md`; `STAGE-1.md §8`
+1. Push гілки `claude/new-session-xkbygw` і мердж docs-коміту в `main`
+2. Що саме публікує ngrok і як тоді працює ідентичність
+   `Tailscale-User-Login` / allowlist (`GATEWAY.md §2` розраховує на Serve);
+   що слухає 3131 і 4040 — для оновлення `GATEWAY.md`
+3. Які пункти `STAGE-1.md §6.4–6.5` вважати пройденими; `§6.2–6.3` і
+   ISS-003/005/006/007 — далі чекають телефона
+4. Зріз 3 (chips, priority) — «РОБИ»?
+5. `style.css` — 1241 рядок: різати чи ні; капсула барабана; відмітки в
+   `STAGE-0.md`; `STAGE-1.md §8`
 
 ---
 
