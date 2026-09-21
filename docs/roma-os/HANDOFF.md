@@ -38,8 +38,9 @@
 рядок «Джерело даних» за донором (пілюлі + поле), чесні тексти Памʼяті. GBrain
 0.51 перевірено read-only: `recall` = детермінований recent feed, поля
 факту реальні. Локально: `verify` ✅ (22 unit), gateway ✅ (21), e2e ✅ 57/57.
-`main` = `b301da1`, CI на `main` зелений усіма трьома job'ами (checks, gateway,
-e2e Chromium + WebKit), деплой 25 зелений. Два уроки CI по дорозі: headless
+`main` = `b301da1` за вмістом (після нього два docs-коміти Романа `7475a5d` і
+його revert `6670aa6`, файли без змін), CI на `main` зелений усіма трьома
+job'ами (checks, gateway, e2e Chromium + WebKit), деплой 25 зелений. Два уроки CI по дорозі: headless
 WebKit рахує сторінку невидимою (оновлення на `pageshow` тепер без перевірки
 видимості) і не показує Playwright запити, які service worker пропускає
 наскрізь (у `live.spec.ts` worker вимкнений, прохід доведено окремим тестом

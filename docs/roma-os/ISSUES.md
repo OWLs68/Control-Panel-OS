@@ -176,6 +176,33 @@ ISS-002 і ISS-004 — `verified` зі скріншота живого iPhone 20
 - **fix commit:** `3608e15` — Зона слідує за пальцем, защіпується на порозі 40px; смужка проявляється cross-fade; чіпи лишаються; свайп униз по смужці розгортає; свайп униз по табло відкриває чат.
 - **verification:** headless Chromium 390px (e2e) ✅; живий iPhone — ще ні
 
+### ISS-008 — e2e на WebKit падав на тесті оновлення живої Памʼяті
+
+- **status:** `verified`
+- **priority:** `high`
+- **discovered:** 2026-09-21, CI (`ci.yml` run #58 на `a122d7b`, повтор run #61 на `1387373`)
+- **area:** CI / e2e (WebKit) / оновлення живих даних
+- **actual behavior:** на `main` після зрізу 1 job `e2e` червоний лише на
+  WebKit, лише тест «a refresh redraws the screen you are looking at»:
+  після синтетичного `visibilitychange` Памʼять не перемальовувалась.
+  Дві причини по черзі: (1) headless WebKit тримає `document.visibilityState`
+  не `visible`, і guard у `source.ts` блокував оновлення; (2) після того як
+  service worker бере сторінку під контроль, Playwright у WebKit не бачить
+  запити, які worker пропускає наскрізь, — підмінений `page.route()` gateway
+  ставав недосяжним на другому fetch. Живий сайт не постраждав: обидва
+  деплої зелені, Chromium зелений.
+- **expected behavior:** оновлення при поверненні застосунку на екран
+  перемальовує Памʼять; e2e доводить це обома двигунами.
+- **reproduction:** push у `main` → `ci.yml` → job `e2e` з `PW_WEBKIT=1` → fail.
+- **fix commit:** `8687330` — `pageshow` оновлює без перевірки видимості
+  (сторінку показують — вона видима; bfcache-повернення не дає
+  `visibilitychange`), `visibilitychange` і 90-секундний інтервал — лише на
+  екрані; `f8c60b9` — `live.spec.ts` з `serviceWorkers: 'block'`, тест
+  спершу перевіряє, що запит дійшов до gateway, окремий Chromium-тест
+  доводить прохід worker'а.
+- **verification:** `ci.yml` run #64 на `b301da1` — success усіма трьома
+  job'ами (checks, gateway, e2e Chromium + WebKit), 2026-09-21 02:41.
+
 ### ISS-001 — smoke-тест деплою шукав елемент старого чат-бару
 
 - **status:** `verified`
