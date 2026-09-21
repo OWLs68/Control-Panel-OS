@@ -7,6 +7,13 @@
 import { expect, test, type Page, type Route } from '@playwright/test'
 import { gotoModule } from './helpers.js'
 
+// The service worker is off for this file. It passes cross-origin requests
+// through untouched (sw.js:62) — but once it controls the page, headless
+// WebKit's Playwright no longer sees the requests it passes through, so the
+// routed gateway below would be unreachable on the second fetch. Chromium does
+// see them, and the last test in this file proves the pass-through there.
+test.use({ serviceWorkers: 'block' })
+
 const GW = 'https://gw.test'
 const ALL_MODULES = ['control', 'agents', 'projects', 'memory', 'events']
 
@@ -69,23 +76,32 @@ test('memory comes from the gateway, marked live; the other screens stay demo', 
   await expect(page.locator('#screen-projects .data-notice')).toContainText('Джерело: демо-дані · fixtures:projects')
 })
 
-test('a refresh redraws the screen you are looking at', async ({ page }) => {
+/**
+ * Boot on one fact, then make the gateway answer with two and fire pageshow —
+ * a bfcache restore — once the 5s guard against a double first load has
+ * passed. First the request must reach the (routed) gateway, then the screen
+ * must show both rows without a navigation: that is emitDataChanged at work.
+ */
+async function refreshShowsSecondFact(page: Page): Promise<void> {
   let facts = [FACT_78]
-  await page.route(`${GW}/**`, (route) => serveJson(route, 200, snapshot(facts)))
+  let hits = 0
+  await page.route(`${GW}/**`, (route) => { hits++; return serveJson(route, 200, snapshot(facts)) })
   await bootLive(page)
   await ready(page)
   await gotoModule(page, 'memory')
   await expect(page.locator('#screen-memory .card-row')).toHaveCount(1)
 
   facts = [FACT_79, FACT_78]
-  // A bfcache restore fires pageshow, which refreshes once the 5s guard
-  // against a double first load has passed; emitDataChanged does the rest.
-  // (visibilitychange is the other trigger, but headless WebKit reports the
-  // page hidden, so it cannot be driven here.)
+  const before = hits
   await page.waitForTimeout(5_200)
   await page.evaluate(() => window.dispatchEvent(new Event('pageshow')))
+  await expect.poll(() => hits, { message: 'the refresh never reached the gateway' }).toBeGreaterThan(before)
   await expect(page.locator('#screen-memory .card-row')).toHaveCount(2)
   await expect(page.locator('#screen-memory').getByText(FACT_79.text)).toBeVisible()
+}
+
+test('a refresh redraws the screen you are looking at', async ({ page }) => {
+  await refreshShowsSecondFact(page)
 })
 
 test('when the Mac is gone the last snapshot stays, and says so', async ({ page }) => {
@@ -159,4 +175,19 @@ test('back to demo drops the live cache and the demo facts return', async ({ pag
   await expect(screen.getByText(FACT_78.text)).toHaveCount(0)
   expect(await page.evaluate(() => localStorage.getItem('roma_live_snapshot'))).toBeNull()
   expect(await page.evaluate(() => localStorage.getItem('roma_data_source'))).toBe('demo')
+})
+
+test.describe('with the service worker in control', () => {
+  test.use({ serviceWorkers: 'allow' })
+
+  test('the worker passes the gateway request through, and the screen still redraws', async ({ page, browserName }) => {
+    test.skip(browserName === 'webkit', 'headless WebKit hides worker pass-through requests from Playwright')
+    // A reload puts the page under the worker's control before the refresh.
+    await page.route(`${GW}/**`, (route) => serveJson(route, 200, snapshot([FACT_78])))
+    await bootLive(page)
+    await ready(page)
+    await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true)
+    await page.unroute(`${GW}/**`)
+    await refreshShowsSecondFact(page)
+  })
 })
