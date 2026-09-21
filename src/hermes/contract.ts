@@ -108,7 +108,7 @@ export function describeError(err: unknown): string {
       case 'unauthorized': return 'Немає доступу до Hermes.'
       case 'rate-limited': return 'Забагато запитів поспіль. Трохи зачекай.'
       case 'bad-response': return 'Відповідь Hermes не розпізнана.'
-      case 'not-configured': return 'Hermes ще не підключений — працює заглушка.'
+      case 'not-configured': return 'Hermes не підключений: адресу gateway не задано в налаштуваннях.'
     }
   }
   return 'Щось пішло не так.'

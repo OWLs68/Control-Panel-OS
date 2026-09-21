@@ -20,51 +20,50 @@
 > «поточний HEAD». Актуальний HEAD тут не зберігається взагалі: `/start`
 > бере його через `git rev-parse HEAD`.
 
-- **session_id:** `20260920-2219-nouemk`
-- **started_at:** `2026-09-20T22:19:42Z`
-- **branch:** `claude/new-session-nouemk`
-- **start_head:** `e33f34a`
-- **start_main:** `e33f34a`
-- **work_end_head:** `b301da1` (= `main`; зріз 1 живих даних, CI зелений)
+- **session_id:** `20260921-1337-dmm98t`
+- **started_at:** `2026-09-21T13:37:36Z`
+- **branch:** `claude/tender-shannon-dmm98t`
+- **start_head:** `915c4ee`
+- **start_main:** `915c4ee`
+- **work_end_head:** ще немає — зріз 2 Crow лежить у робочому дереві,
+  коміт і push чекають окремого дозволу Романа
 
-**Де зупинились.** Після `bcd2894` (налаштування, поява карток, аудит — усе в
-`main`, деплой 22) зроблено **перший вертикальний зріз живих даних**:
-`server/roma-gateway/` (окремий npm workspace, Node 22, `127.0.0.1:8787`,
-ідентичність — `Tailscale-User-Login`, CORS лише на наш origin, `recall`
-без `query`, лише читання, 21 тест); у застосунку — `fetchSnapshot` в
-`gateway.ts` (сторож кордону не послаблений), композитний `liveAdapter`
-(Памʼять наживо, решта демо), перемикач `roma_data_source` +
-`roma_gateway_url`, кеш `roma_live_snapshot` (лише нормалізований знімок),
-рядок «Джерело даних» за донором (пілюлі + поле), чесні тексти Памʼяті. GBrain
-0.51 перевірено read-only: `recall` = детермінований recent feed, поля
-факту реальні. Локально: `verify` ✅ (22 unit), gateway ✅ (21), e2e ✅ 57/57.
-`main` = `b301da1` за вмістом (після нього два docs-коміти Романа `7475a5d` і
-його revert `6670aa6`, файли без змін), CI на `main` зелений усіма трьома
-job'ами (checks, gateway, e2e Chromium + WebKit), деплой 25 зелений. Два уроки CI по дорозі: headless
-WebKit рахує сторінку невидимою (оновлення на `pageshow` тепер без перевірки
-видимості) і не показує Playwright запити, які service worker пропускає
-наскрізь (у `live.spec.ts` worker вимкнений, прохід доведено окремим тестом
-на Chromium). Документ: `docs/roma-os/GATEWAY.md`. Цей docs-коміт — лише на
-гілці; влити в `main` на старті наступної сесії.
+**Де зупинились.** Зроблено **зріз 2: Crow наживо через Hermes**. Контракт
+Hermes узято не з голови, а з upstream `NousResearch/hermes-agent`
+(`tui_gateway/`): JSON-RPC 2.0 по WebSocket `ws://127.0.0.1:9119/api/ws?token=…`,
+`gateway.ready` → `session.create`/`session.resume` → `prompt.submit` →
+`message.delta`… → `message.complete`; усе записано в `GATEWAY.md §4`.
+У gateway: `hermes-protocol.ts` (кадри, envelope, seed), `hermes-client.ts`
+(один сокет, одна сесія, один хід; resume → один fallback на create; збирання
+дельт без повторів; таймаути; `session.interrupt` при обриві; heartbeat),
+`session-state.ts` (атомний файл 0600 поза репо), `token.ts` (лише шлях у
+`.env`, значення ніде не логується), `crow.ts` (валідація, ліміти, 400/405/
+409/413/502/504), `POST /api/v1/crow` реальний. У застосунку: `createLiveGateway`
+у `gateway.ts` (єдині двері з `fetch`), `applyDataSource()` перемикає gateway
+разом з адаптером, помилки → наявні kinds, чесні підписи на Control і в
+налаштуваннях. Тести: gateway 63 (фейковий Hermes на `ws`), unit 26,
+e2e +5 (`crow-live.spec.ts`). Реального Hermes у хмарній сесії немає — ланцюг
+DeepSeek/GBrain/VIOLET-624 доведений лише Романом на Mac.
 
-**Blockers.** Немає в коді. Приймання на телефоні чекає трьох зовнішніх
-кроків Романа (нижче).
+**Blockers.** У коді немає. Коміт/push — за словом Романа. Приймання на
+телефоні — `STAGE-1.md §6.5` (потрібні `HERMES_TOKEN_FILE` у `.env`, Hermes
+на 9119, Serve).
 
-**Наступний крок.** Роман: (1) `tailscale version` + `tailscale serve --help`
-на Mac — команду Serve записати в `GATEWAY.md §9`; (2) окремий read-only
-клієнт GBrain для gateway → `GBRAIN_TOKEN` у `.env`; (3) запустити gateway,
-опублікувати через Serve, у налаштуваннях — «Наживо» + адреса;
-`STAGE-1.md §6.4`. Далі — зріз 2 (`GATEWAY.md §11`).
+**Наступний крок.** Роман: (1) «коміт» → коміт і push гілки, мердж у `main`
+після зелених перевірок; (2) на Mac: `.env` з `HERMES_TOKEN_FILE`, запуск
+gateway, `curl` з `GATEWAY.md §8`, потім телефон за `STAGE-1.md §6.5`;
+(3) кроки зрізу 1, які ще відкриті (`tailscale serve`, read-токен GBrain).
+Далі — chips і priority з Hermes, `GATEWAY.md §12`.
 
 **Чого не чіпати.** NeverMind і Drive — read-only; `PORTING.md §4`;
-Hermes-конфіг, Docker, GBrain server; `main` — merge-комітом після зелених
-локальних перевірок (HOT RULE 3). Tailscale і GBrain-credential — лише Роман
-руками.
+Hermes-конфіг і source, Docker, GBrain server; `main` — merge-комітом після
+зелених локальних перевірок (HOT RULE 3). Tailscale, token Hermes і
+GBrain-credential — лише Роман руками.
 
 **Чекає рішення Романа.**
-1. Три зовнішні кроки вище і результат `STAGE-1.md §6.4`, потім `§6.2–6.3`
-2. `style.css` — 1241 рядок: різати чи ні
-3. Патчі команд `/start` і `/finish` (чекають «так», див. журнал сесії)
+1. Дозвіл на коміт/push зрізу 2 Crow
+2. Приймання на телефоні `STAGE-1.md §6.4–6.5`, потім `§6.2–6.3`
+3. `style.css` — 1241 рядок: різати чи ні
 4. Капсула барабана; відмітки в `STAGE-0.md`; `STAGE-1.md §8`
 
 ---
@@ -459,7 +458,7 @@ Finance, Evening, Me, інтелекту digital clone.
 - Handoff між сесіями живе **тільки в репо**: `CLAUDE.md`, `docs/roma-os/HANDOFF.md`,
   `docs/roma-os/SESSION_LOG.md`, `docs/roma-os/ISSUES.md`, `docs/roma-os/STAGE-0.md`.
   У Google Drive нових handoff-файлів не створювати
-- Реального Hermes gateway немає — тільки контракт і заглушка
+- Hermes: у «Наживо» Crow іде через Roma gateway до справжнього Hermes на Mac (`GATEWAY.md §4`); у «Демо» — заглушка
 
 **Обмеження середовища:**
 - `owls68.github.io` заблокований egress-політикою cloud-сесії — задеплоєний
@@ -472,5 +471,5 @@ Finance, Evening, Me, інтелекту digital clone.
 1. Чи лишається окрема вкладка Notes
 2. Шрифтова пара — зараз Bricolage Grotesque + Manrope, підтвердити або замінити
 3. Коли підключати Productivity — після ядра чи паралельно з Agents/Projects
-4. Реальний спосіб достукатись до Hermes з телефона
+4. ~~Реальний спосіб достукатись до Hermes з телефона~~ — є: Roma gateway → Hermes `/api/ws` (21.09)
 5. Чи потрібна темна тема

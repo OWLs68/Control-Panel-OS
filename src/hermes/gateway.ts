@@ -5,10 +5,13 @@
  * else may talk to a gateway directly. `scripts/check-gateway-boundary.mjs`
  * enforces it in CI, the same way NeverMind guards `openaiFetch`.
  *
- * Replacing the stub with the real Hermes is `setGateway(liveGateway)` — one
- * line, one file, no screen touched.
+ * Replacing the stub with the real Hermes is `setGateway(createLiveGateway(…))`
+ * — one line in the data-source switch, no screen touched. Both transports
+ * that leave the phone live in this file: the snapshot (GET /api/v1/state)
+ * and Crow (POST /api/v1/crow), because the boundary guard allows `fetch`
+ * here and nowhere else.
  */
-import { type CrowReply, type CrowRequest, type HermesGateway, type LiveSnapshot, GatewayError } from './contract.js'
+import { type CrowChip, type CrowReply, type CrowRequest, type HermesGateway, type LiveSnapshot, GatewayError } from './contract.js'
 import { stubGateway } from './stub.js'
 import type { MemoryFact } from '../data/types.js'
 
@@ -137,4 +140,95 @@ function isMemoryFact(row: unknown): row is MemoryFact {
     && typeof r.ts === 'number' && Number.isFinite(r.ts)
     && typeof r.created_at === 'string' && typeof r.updated_at === 'string'
     && nullableString(r.deleted_at) && nullableString(r.user_id) && nullableString(r.hlc)
+}
+
+/* ── The Crow transport ───────────────────────────────────────────────
+ *
+ * Live mode: askCrow → liveGateway.ask → POST /api/v1/crow on the Roma
+ * gateway → Hermes on the Mac → one reply. The phone sends the CrowRequest
+ * as it is and accepts only a CrowReply back; every failure is named with
+ * the same kinds the snapshot uses, so the chat says what the memory screen
+ * says. No token, no Hermes address, nothing but the gateway's hostname.
+ */
+
+const CROW_PATH = '/api/v1/crow'
+/** Past the gateway's own turn timeout (120 s), so the gateway names a slow turn before the phone gives up. */
+const CROW_TIMEOUT_MS = 150_000
+const CHIP_ACTIONS = new Set(['nav', 'chat', 'open'])
+const CHIP_TONES = new Set(['neutral', 'accent', 'danger'])
+const PRIORITIES = new Set(['normal', 'urgent', 'success'])
+
+/** The address is read when a question is asked, not when the gateway is made: Roman may retype it. */
+export function createLiveGateway(getUrl: () => string): HermesGateway {
+  return {
+    mode: 'live',
+    label: 'Hermes через gateway',
+    ask: (req) => postCrow(getUrl(), req),
+  }
+}
+
+export async function postCrow(gatewayUrl: string, req: CrowRequest): Promise<CrowReply> {
+  const base = normalizeGatewayUrl(gatewayUrl)
+  if (!base) throw new GatewayError('not-configured', 'no gateway url')
+
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), CROW_TIMEOUT_MS)
+  let res: Response
+  try {
+    res = await fetch(`${base}${CROW_PATH}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req),
+      signal: controller.signal,
+      cache: 'no-store',
+    })
+  } catch (err) {
+    throw new GatewayError('unreachable', err instanceof Error ? err.message : 'network')
+  } finally {
+    clearTimeout(timer)
+  }
+
+  if (res.status === 401 || res.status === 403) throw new GatewayError('unauthorized', `http ${res.status}`)
+  // 409 is the gateway's «a turn is already running»; 429 is too many — both mean «wait a moment».
+  if (res.status === 409 || res.status === 429) throw new GatewayError('rate-limited', `http ${res.status}`)
+  // 400 / 413: the phone sent something the gateway will not take — a shape problem on our side, not Hermes'.
+  if (res.status >= 400 && res.status < 500) throw new GatewayError('bad-response', `http ${res.status}`)
+  // 501 (not wired), 502 (Hermes down or failed), 504 (turn timed out): Hermes is not answering.
+  if (!res.ok) throw new GatewayError('unreachable', `http ${res.status}`)
+
+  let body: unknown
+  try { body = await res.json() } catch { throw new GatewayError('bad-response', 'not json') }
+  const reply = parseCrowReply(body)
+  if (!reply) throw new GatewayError('bad-response', 'unexpected shape')
+  if (reply.requestId !== req.requestId) throw new GatewayError('bad-response', 'reply to another request')
+  return reply
+}
+
+/** Accepts only a CrowReply; the text may be empty (safeReply turns it into something sayable). */
+export function parseCrowReply(body: unknown): CrowReply | null {
+  if (!body || typeof body !== 'object') return null
+  const b = body as Record<string, unknown>
+  if (typeof b.requestId !== 'string' || !b.requestId) return null
+  if (typeof b.text !== 'string') return null
+  if (!Array.isArray(b.chips)) return null
+  if (typeof b.priority !== 'string' || !PRIORITIES.has(b.priority)) return null
+  if (b.forModule !== undefined && typeof b.forModule !== 'string') return null
+  const chips: CrowChip[] = []
+  for (const row of b.chips) {
+    if (!isCrowChip(row)) return null
+    chips.push(row)
+  }
+  const reply: CrowReply = { requestId: b.requestId, text: b.text, chips, priority: b.priority as CrowReply['priority'] }
+  if (typeof b.forModule === 'string') reply.forModule = b.forModule
+  return reply
+}
+
+function isCrowChip(row: unknown): row is CrowChip {
+  if (!row || typeof row !== 'object') return false
+  const r = row as Record<string, unknown>
+  return typeof r.id === 'string' && r.id.length > 0
+    && typeof r.label === 'string' && r.label.length > 0
+    && typeof r.action === 'string' && CHIP_ACTIONS.has(r.action)
+    && (r.target === undefined || typeof r.target === 'string')
+    && (r.tone === undefined || (typeof r.tone === 'string' && CHIP_TONES.has(r.tone)))
 }
