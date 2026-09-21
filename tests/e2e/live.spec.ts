@@ -78,8 +78,12 @@ test('a refresh redraws the screen you are looking at', async ({ page }) => {
   await expect(page.locator('#screen-memory .card-row')).toHaveCount(1)
 
   facts = [FACT_79, FACT_78]
-  // Coming back into view triggers a refresh; emitDataChanged does the rest.
-  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')))
+  // A bfcache restore fires pageshow, which refreshes once the 5s guard
+  // against a double first load has passed; emitDataChanged does the rest.
+  // (visibilitychange is the other trigger, but headless WebKit reports the
+  // page hidden, so it cannot be driven here.)
+  await page.waitForTimeout(5_200)
+  await page.evaluate(() => window.dispatchEvent(new Event('pageshow')))
   await expect(page.locator('#screen-memory .card-row')).toHaveCount(2)
   await expect(page.locator('#screen-memory').getByText(FACT_79.text)).toBeVisible()
 })
