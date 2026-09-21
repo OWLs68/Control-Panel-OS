@@ -72,6 +72,20 @@ Branch `claude/new-session-xkbygw` · Start `4808644` · Work end `970717e`
   `main` не зачеплено. Наслідок — HOT RULE 8.
 - Далі: мердж у `main` — лише з дозволу; backlog у `HANDOFF.md`.
 
+### Доповнення 20:22
+
+- Зроблено: пріоритет уточнено за найновішим working context GPT у GBrain —
+  `HANDOFF.md` (задача і backlog), `GATEWAY.md §12.2`: якість відповідей
+  Crow — відкритий backlog item, не автоматично наступний.
+- Рішення Романа: після завершення й checkpoint поточної інтеграції
+  Crow/Hermes наступний high-priority етап — read-only аудит і
+  реструктуризація Google Drive / меж проєктів (Roman AI OS → `00_SYSTEM` /
+  `Roma OS` / `Projects` / `Knowledge Base` / `Archive`); виконує GPT у своїй
+  зоні. Claude після цього docs-коміту продуктового коду не починає і чекає
+  наступного завдання. Точне місце Crow-задачі — після аудиту за пріоритетом.
+- Інциденти: Без інцидентів.
+- Далі: мердж у `main` — лише з дозволу; чекати завдання Романа.
+
 ---
 
 ## 2026-09-21 — 20260921-1337-dmm98t — зріз 2: Crow наживо через Hermes (Stage 3)
