@@ -1,12 +1,17 @@
-# Roma OS
+# Crow OS MP
 
-Інтерфейс-оболонка операційної системи **Roman AI OS**. Не life-tracker,
-не щоденник, не admin-панель — ядро продукту це стан і робота самої ОС.
-Мобільний сценарій головний: з телефона видно, що відбувається, що потребує
-Романа, що роблять агенти, що з проєктами — і можна сказати щось Crow.
+Поточний змінний інтерфейс (replaceable interface/client) до **Crow AI OS** —
+не сама ОС. Не life-tracker, не щоденник, не admin-панель: з телефона видно,
+що відбувається в системі, що потребує Романа, що роблять агенти, що з
+проєктами — і можна сказати щось Crow. Мобільний сценарій головний.
 
 > **Починаєш нову сесію?** Читай `CLAUDE.md`, далі `docs/roma-os/HANDOFF.md`
-> і `docs/roma-os/STAGE-0.md`. Handoff між сесіями живе тільки тут, у git.
+> і `docs/roma-os/STAGE-0.md`. Це репо — джерело правди для Crow OS MP (код,
+> repo-owned технічні документи, поточний технічний стан); handoff між сесіями
+> живе тільки тут, у git. Системна документація Crow AI OS — у Google Drive
+> (`Crow AI OS — Core Rules`, `Crow AI OS — Current State`, `Personal AI
+> Profile — Roman`; `Components / Crow OS MP`). GBrain — спільна довга памʼять
+> і пошук, не сховище канонічних документів.
 
 ---
 
@@ -20,7 +25,7 @@ IIFE-бандл, один `index.html`, один service worker.
 | Збірка | esbuild (`node build.js` → `dist/`) |
 | Мова | TypeScript, strict |
 | Стан | localStorage за доменами, конверт сутності з UUID v7 |
-| Агент | Crow в інтерфейсі, Hermes як runtime під капотом — наживо через Roma gateway, або заглушка в демо |
+| Агент | Crow/Hermes — cross-system orchestrator; в інтерфейсі — Crow; наживо через Roma gateway (`server/roma-gateway`), або заглушка в демо |
 | Тести | `node --test` (юніт) + Playwright на viewport iPhone |
 | Деплой | GitHub Pages, тільки з `main` |
 
@@ -56,7 +61,7 @@ src/
   hermes/             контракт gateway, заглушка, ЄДИНИЙ кордон назовні
   data/               типи, адаптери, фікстури
   ui/                 примітиви, шторка, іконки, тост
-docs/roma-os/         HANDOFF, STAGE-0, мокап, зображення Crow
+docs/roma-os/         HANDOFF, STAGE-0/1, PORTING, ISSUES, GATEWAY, SESSION_LOG, мокап, зображення Crow (назва теки історична)
 scripts/              сторож кордону, статичний сервер, smoke-тест деплою
 tests/                unit/ + e2e/
 server/roma-gateway/  окремий сервіс для Mac: телефон → GBrain (читання) і → Hermes (Crow) (docs/roma-os/GATEWAY.md)
@@ -84,7 +89,8 @@ server/roma-gateway/  окремий сервіс для Mac: телефон →
 
 ## Звідки взяті механіки
 
-`OWLs68/NeverMind` — донор UI/UX, read-only. Барабан, три стани чату, підйом
+`OWLs68/NeverMind` — донор UI/UX і механік, read-only; не архітектурне
+джерело правди. Барабан, три стани чату, підйом
 під клавіатуру, голос українською, шторка, чіпи, конверт сутності перенесені
 звідти разом із числами, які там не випадкові. Що саме і з якого файла —
 таблиця у `docs/roma-os/HANDOFF.md` §3.

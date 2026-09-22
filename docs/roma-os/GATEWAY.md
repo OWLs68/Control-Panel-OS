@@ -1,4 +1,4 @@
-# Roma gateway — як телефон читає GBrain і говорить з Hermes
+# Roma gateway (`server/roma-gateway`) — як Crow OS MP читає GBrain і говорить з Hermes
 
 Два вертикальні зрізи живих даних через один сервіс на Mac:
 
@@ -28,13 +28,26 @@ Tailscale Serve на Mac  ──додає заголовок Tailscale-User-Log
                                                                           DeepSeek → mcp__gbrain__recall → відповідь
 ```
 
-- **GBrain в інтернет не дивиться.** Він доступний тільки gateway на тому ж Mac.
+- **GBrain з боку gateway — лише локально.** Gateway читає його на тому ж Mac.
+  Публікація GBrain через ngrok — окремий дозволений транспорт для інших
+  клієнтів (правило — `CLAUDE.md`, «Правила»), не шлях телефону.
 - **Hermes теж loopback-only.** Єдиний його клієнт — gateway. Телефон не
   знає ні адреси Hermes, ні токена; він знає лише адресу gateway.
 - **Gateway слухає лише `127.0.0.1`.** Єдиний шлях до нього — Tailscale Serve.
 - **У застосунку немає жодного ключа.** Телефон знає адресу gateway (hostname,
   не секрет) і вибір «Демо / Наживо». Обидва живі шляхи — Памʼять і Crow —
   вмикаються одним перемикачем разом; мовчазного переходу на демо немає.
+
+**Реальний контур на Mac (за словами Романа 21–22.09; команди LaunchAgent і
+Docker у репо не зберігаються).** GBrain, ngrok і Roma gateway — macOS
+LaunchAgents; Hermes — Docker-контейнер з `restart unless-stopped`, Docker —
+у «Відкривати під час входу». ngrok публікує **лише GBrain** (публічний URL →
+`localhost:3131`; `4040` — локальний inspection port ngrok) і **не є шляхом
+телефону до gateway**: телефон → gateway лише через Tailscale Serve із
+заголовком `Tailscale-User-Login`. Hermes у Docker ходить до GBrain через
+`host.docker.internal:3131`. Після чистого перезавантаження без ручного
+запуску порти 3131, 4040, 8787, 9119 відповідають; ланцюг від краю до краю
+прийнято на iPhone (§12.2).
 
 ## 2. Межа безпеки
 
@@ -218,7 +231,7 @@ gateway відповідає `-32601`, і агент одразу отримує
 | `kind`, `entity_slug` | `category` | `preference` → `preference`; `people/*` → `person`; `projects/*` → `project`; решта → `system` |
 | `valid_from`, інакше `created_at` | `ts` | час події, інакше час запису |
 | `created_at` | `created_at`, `updated_at` | факт незмінний — одна дата |
-| — | `deleted_at`, `user_id`, `hlc` | `null`: технічні поля Roma OS, GBrain їх не має |
+| — | `deleted_at`, `user_id`, `hlc` | `null`: технічні поля Crow OS MP, GBrain їх не має |
 
 Рядки без `fact_id`/`id`, без тексту або без валідного `created_at`
 відкидаються і рахуються в `dropped`. Слаги у встановленому brain — без
@@ -266,13 +279,16 @@ gateway відповідає `-32601`, і агент одразу отримує
 
 ## 9. Як запустити gateway на Mac
 
+> На Mac Романа gateway, GBrain і ngrok уже стартують як LaunchAgents, Hermes —
+> у Docker (§1). Кроки нижче — для нового налаштування або ручного запуску.
+
 1. У корені репо: `npm ci` (workspace встановить залежності gateway).
 2. `cp server/roma-gateway/.env.example server/roma-gateway/.env` і заповнити:
    `ROMA_ALLOWED_LOGINS` (твій логін Tailscale), `GBRAIN_MCP_URL`,
    `GBRAIN_TOKEN` (див. §10), `HERMES_TOKEN_FILE` (шлях до файлу з токеном,
    значення в `.env` **не** класти). Решта `HERMES_*` мають дефолти.
-3. Hermes має бути запущений у server mode на `127.0.0.1:9119` — так, як
-   Роман уже запускав його для перевірки Mac-клієнтом 21.09.
+3. Hermes має бути запущений у server mode на `127.0.0.1:9119` (на Mac
+   Романа — Docker-контейнер, §1).
 4. Запуск:
 
    ```bash
@@ -307,7 +323,7 @@ gateway відповідає `-32601`, і агент одразу отримує
 на Mac (сімейство `gbrain auth …`; точний підкоманд перевірити там, тут не
 вигадуємо). Gateway цей токен нікуди не передає, крім самого GBrain.
 
-## 11. Tailscale Serve — після перевірки на Mac
+## 11. Tailscale Serve — перевірено на Mac та iPhone 21.09
 
 Команду сюди записуємо **лише** після перевірки фактичної версії:
 
@@ -318,7 +334,7 @@ gateway відповідає `-32601`, і агент одразу отримує
    інакше `https://<mac>.<tailnet>.ts.net` не підніметься.
 4. Після цього — опублікувати `127.0.0.1:8787` через Serve (не Funnel: Funnel
    виставляє назовні і не додає заголовок ідентичності).
-5. У Roma OS: Налаштування → Джерело даних → **Наживо** → адреса
+5. У Crow OS MP: Налаштування → Джерело даних → **Наживо** → адреса
    `https://<mac>.<tailnet>.ts.net`.
 
 Хід Crow з інструментами може тривати 30–60 с: якщо Serve обірве довгу
@@ -346,7 +362,7 @@ busy, обрив клієнта, валідація `POST /api/v1/crow`, неу�
 
 Реального Hermes у хмарній сесії немає, тому це приймання робить лише Роман.
 **21.09 підтверджено на iPhone**, а не лише Mac-клієнтом: реальний ланцюг від
-краю до краю Roma OS → Roma Gateway → Hermes → GBrain повернув `VIOLET-624`
+краю до краю Crow OS MP → Roma gateway → Hermes → GBrain повернув `VIOLET-624`
 через справжній `recall`; після перезавантаження повторний запит повернув
 `JADE-919`. Відповідь одна, без reasoning, повторів і службового блоку
 `[roma-os context]`. У `STAGE-1.md §6.5` відмічено саме ці два пункти.

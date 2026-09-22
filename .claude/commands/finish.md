@@ -1,4 +1,4 @@
-# /finish — закриття сесії Roma OS
+# /finish — закриття сесії Crow OS MP
 
 Мета одна: наступний `/start` має підняти з репо все, щоб продовжити
 роботу. Це **журнал**, а не звіт: дописуємо, не переписуємо. Коротко.
@@ -64,13 +64,18 @@ Branch · Start HEAD · Work end HEAD · verify/e2e/CI одним словом �
 
 ## 4. Коміт і push
 
+`/finish` — окремий явний контракт: checkpoint і службові документи →
+локальний коміт → push **робочої гілки**. Команду вводить Роман сам, тож
+push гілки входить у неї. Якщо Роман каже «/finish, але не push» — коміт
+лишається локальним, звіт це називає.
+
 ```bash
 git add docs/ .claude/commands/
 git commit -m "docs(session): <session_id>"
-git push -u origin <гілка>     # retry 2/4/8/16s
+git push -u origin <гілка>     # retry 2/4/8/16s; пропустити, якщо «не push»
 ```
 
-Не `main`, не merge, не deploy, не force, не reset.
+**Ніколи** не `main`, не merge, не deploy, не force, не reset (HOT RULE 3).
 
 ## 5. Тести і CI — тільки якщо мінявся продуктовий код
 
@@ -79,8 +84,8 @@ git diff --stat <start_head>..HEAD -- src index.html style.css sw.js build.js se
 ```
 
 - **Порожньо (лише документи)** → тестів не ганяти, CI не чекати. Кінець.
-- **Не порожньо, і останній CI на `work_end_head` уже зелений** (за HOT RULE 3
-  код зазвичай уже в `main` із зеленим CI) → теж нічого не ганяти. Кінець.
+- **Не порожньо, і останній CI на `work_end_head` уже зелений** (код уже
+  змерджений у `main` за дозволом Романа, CI зелений) → теж нічого не ганяти. Кінець.
 - **Не порожньо і CI ще не було** → `npm run verify` і `npm run e2e`, тоді
   один запит `list_workflow_runs` (`ci.yml`, фільтр `branch`, `perPage: 1`),
   чекати інструментально до 5 хв. `failure` → причина в `ISSUES.md`, runtime
@@ -89,9 +94,9 @@ git diff --stat <start_head>..HEAD -- src index.html style.css sw.js build.js se
 
 ## 6. Runtime-файл і звіт
 
-Документи закомічені й запушені, і CI (якщо він був потрібен) зелений →
-`rm -f .claude/.session-runtime.json`. Інакше файл лишається — це те, що
-дозволяє доробити ту саму сесію, а не почати нову поверх.
+Документи закомічені й запушені (або Роман сказав «не push»), і CI (якщо він
+був потрібен) зелений → `rm -f .claude/.session-runtime.json`. Інакше файл
+лишається — це те, що дозволяє доробити ту саму сесію, а не почати нову поверх.
 
 Звіт ≤ 8 рядків українською: що записано, `verify/e2e/CI` або «код не
 мінявся», що чекає Романа, `Branch / work_end_head / main не чіпався`.
