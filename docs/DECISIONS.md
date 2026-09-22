@@ -1,7 +1,12 @@
 # Architecture decisions — Control Panel
 
+> **Legacy.** Цей документ стосується старої Control Panel у гілці
+> `legacy/control-panel-v1` (React + Vite) і **не описує поточний Crow OS MP**
+> (vanilla TypeScript + esbuild). Лишено як історію рішень. Актуальне —
+> `README.md` і `docs/roma-os/`.
+
 Короткий журнал рішень, які важко буде відновити з коду. Не дублює README і не є
-canonical документом Roman AI OS.
+canonical документом Crow AI OS.
 
 ---
 
