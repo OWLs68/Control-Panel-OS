@@ -231,7 +231,7 @@ gateway відповідає `-32601`, і агент одразу отримує
 | `kind`, `entity_slug` | `category` | `preference` → `preference`; `people/*` → `person`; `projects/*` → `project`; решта → `system` |
 | `valid_from`, інакше `created_at` | `ts` | час події, інакше час запису |
 | `created_at` | `created_at`, `updated_at` | факт незмінний — одна дата |
-| — | `deleted_at`, `user_id`, `hlc` | `null`: технічні поля Roma OS, GBrain їх не має |
+| — | `deleted_at`, `user_id`, `hlc` | `null`: технічні поля Crow OS MP, GBrain їх не має |
 
 Рядки без `fact_id`/`id`, без тексту або без валідного `created_at`
 відкидаються і рахуються в `dropped`. Слаги у встановленому brain — без
