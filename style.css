@@ -519,6 +519,9 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
 .source-tag[data-origin="mock"]::before { background: var(--secondary); }
 .source-tag[data-origin="live"] { background: var(--success-soft); color: #4a6340; }
 .source-tag[data-origin="live"]::before { background: var(--success); }
+/* Real, but only on this device (tasks): the info tone, neither demo grey nor live green. */
+.source-tag[data-origin="local"] { background: var(--info-soft); color: #38606d; }
+.source-tag[data-origin="local"]::before { background: var(--info); }
 
 .data-notice {
   display: flex; align-items: center; gap: var(--sp-2);

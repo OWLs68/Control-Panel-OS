@@ -4,7 +4,8 @@
  * Memory comes from GBrain through the Roma gateway; the other five reads
  * stay on the demo fixtures, each still marked «демо» on screen, because
  * nothing real feeds them yet. A missing key in the snapshot means exactly
- * that: not live, so not shown as live.
+ * that: not live, so not shown as live. Tasks are neither: Roman's own, kept
+ * on this device and marked «локально» in both modes.
  *
  * What the phone keeps: the last normalised snapshot only — MemoryFact[],
  * fetchedAt and the source label — under one key, replaced on every success,
@@ -17,7 +18,7 @@
 import { emitDataChanged } from '../core/events.js'
 import { GatewayError, type GatewayErrorKind, type LiveSnapshot } from '../hermes/contract.js'
 import { fetchSnapshot, parseSnapshot } from '../hermes/gateway.js'
-import { mockAdapter, type DataAdapter } from './adapters.js'
+import { mockAdapter, readLocalTasks, type DataAdapter } from './adapters.js'
 import type { MemoryFact, Sourced } from './types.js'
 
 const CACHE_KEY = 'roma_live_snapshot'
@@ -49,6 +50,7 @@ export const liveAdapter: DataAdapter = {
   blockers: (projectId) => mockAdapter.blockers(projectId),
   events: (limit) => mockAdapter.events(limit),
   attention: () => mockAdapter.attention(),
+  tasks: readLocalTasks,
 }
 
 export function liveStatus(): LiveStatus {

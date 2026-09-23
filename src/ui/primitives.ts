@@ -4,7 +4,7 @@
  */
 import { escapeHtml } from '../core/dom.js'
 import { icons, type IconName } from './icons.js'
-import type { Sourced } from '../data/types.js'
+import type { Origin, Sourced } from '../data/types.js'
 
 export type Tone = 'neutral' | 'success' | 'warning' | 'error' | 'info' | 'amber'
 
@@ -89,9 +89,11 @@ export function empty(icon: IconName, title: string, sub: string): string {
   </div>`
 }
 
-/** Says out loud whether what you are reading is real or a fixture. */
+const ORIGIN_LABEL: Record<Origin, string> = { mock: 'демо', live: 'наживо', local: 'локально' }
+
+/** Says out loud whether what you are reading is a fixture, the live system, or data kept on this device. */
 export function sourceTag(src: Sourced<unknown>): string {
-  const label = src.origin === 'mock' ? 'демо' : 'наживо'
+  const label = ORIGIN_LABEL[src.origin]
   return `<span class="source-tag" data-origin="${src.origin}" title="${escapeHtml(src.source)}">${label}</span>`
 }
 

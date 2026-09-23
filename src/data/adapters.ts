@@ -6,8 +6,9 @@
  * and the screens do not change. That is the whole point of writing it down
  * before there is a backend to write against.
  */
-import { type Agent, type Attention, type Blocker, type MemoryFact, type Project, type Sourced, type SystemEvent, sourced } from './types.js'
-import { agentStore, attentionStore, blockerStore, eventStore, memoryStore, projectStore } from './stores.js'
+import { type Agent, type Attention, type Blocker, type MemoryFact, type Project, type Sourced, type SystemEvent, type Task, sourced } from './types.js'
+import { agentStore, attentionStore, blockerStore, eventStore, memoryStore, projectStore, taskStore } from './stores.js'
+import { tasksFor, type TaskFilter } from './tasks.js'
 
 export interface DataAdapter {
   readonly origin: 'mock' | 'live'
@@ -18,6 +19,17 @@ export interface DataAdapter {
   events(limit?: number): Sourced<SystemEvent[]>
   memory(): Sourced<MemoryFact[]>
   attention(): Sourced<Attention[]>
+  /** Roman's own tasks, optionally a view by project or agent — the same objects, never copies. */
+  tasks(filter?: TaskFilter): Sourced<Task[]>
+}
+
+/**
+ * Tasks are real from the first one and live on this device, whichever
+ * adapter is active: not demo, not the system's (v1 has no write path to
+ * Hermes or GBrain). Both adapters read them here.
+ */
+export function readLocalTasks(filter?: TaskFilter): Sourced<Task[]> {
+  return sourced(tasksFor(taskStore.all(), filter), 'local', 'local:tasks')
 }
 
 /** Reads the seeded fixtures out of the local stores. */
@@ -40,6 +52,7 @@ export const mockAdapter: DataAdapter = {
     ),
   memory: () => sourced(memoryStore.all(), 'mock', 'fixtures:memory'),
   attention: () => sourced(attentionStore.all(), 'mock', 'fixtures:attention'),
+  tasks: readLocalTasks,
 }
 
 let active: DataAdapter = mockAdapter

@@ -16,6 +16,7 @@ import { initTouchDetect } from './touch.js'
 import { seedFixtures } from '../data/seed.js'
 import { applyDataSource, setupDataSourceRefresh } from '../data/source.js'
 import { setupShell } from '../nav/shell.js'
+import { migrateModuleState } from '../nav/module-state.js'
 import { setupKeyboardAvoiding } from '../crow/keyboard.js'
 import { setupVoiceInput } from '../crow/voice.js'
 import { setupDeployInfo } from '../ui/deploy-info.js'
@@ -28,6 +29,8 @@ import { registerEvents } from '../modules/events.js'
 
 export function boot(): void {
   registerModules()
+  // A module added after the bar was saved is offered to it once (module-state.ts).
+  migrateModuleState()
   seedFixtures()
   // Demo or live, decided before the first screen draws.
   applyDataSource()

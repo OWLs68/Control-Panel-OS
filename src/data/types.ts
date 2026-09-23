@@ -41,6 +41,26 @@ export interface SystemEvent extends Entity {
   source: string
 }
 
+export type TaskStatus = 'backlog' | 'planned' | 'in_progress' | 'blocked' | 'done'
+
+/**
+ * A unit of work — Roman's own or an agent's. Real from the first one: kept on
+ * this device (origin 'local'), never seeded, never touched by the demo reset.
+ * Rules and views live in tasks.ts.
+ */
+export interface Task extends Entity {
+  title: string
+  status: TaskStatus
+  /** Roman has to act before it can move. A flag across statuses, not a status. */
+  needsRoman: boolean
+  /** A task may live outside any project. */
+  projectId: string | null
+  /** The agent doing it; null — no agent (Roman's own, or not assigned yet). */
+  agentId: string | null
+  /** The one active blocker (v1). Shown only while the status is 'blocked'. */
+  blockerId: string | null
+}
+
 export interface MemoryFact extends Entity {
   text: string
   category: 'system' | 'project' | 'person' | 'preference'
@@ -59,20 +79,26 @@ export interface Attention extends Entity {
 }
 
 /**
+ * Where a read came from: 'mock' — demo fixtures; 'live' — the system through
+ * the gateway; 'local' — real data that lives only on this device (tasks).
+ */
+export type Origin = 'mock' | 'live' | 'local'
+
+/**
  * Provenance envelope, carried over from the previous Control Panel.
  *
- * Every read says where it came from. Stage 1 is entirely fixtures, and the
- * interface has to admit that on screen rather than let a demo number be
- * mistaken for the real state of the system.
+ * Every read says where it came from, and the interface has to admit it on
+ * screen rather than let a demo number be mistaken for the real state of the
+ * system — or a phone-local list for the system's own.
  */
 export interface Sourced<T> {
   value: T
-  origin: 'mock' | 'live'
+  origin: Origin
   /** Human-readable source of truth, e.g. 'fixtures' or 'hermes:/agents'. */
   source: string
   fetchedAt: number
 }
 
-export function sourced<T>(value: T, origin: 'mock' | 'live', source: string): Sourced<T> {
+export function sourced<T>(value: T, origin: Origin, source: string): Sourced<T> {
   return { value, origin, source, fetchedAt: Date.now() }
 }
