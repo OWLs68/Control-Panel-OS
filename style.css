@@ -436,6 +436,13 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
 .card-row.is-done { opacity: 0.5; }
 .card-row.is-done .card-row-title { text-decoration: line-through; }
 .task-group-empty { padding: 11px var(--sp-4) 13px; font-size: var(--fs-sm); color: var(--text-2); }
+.task-new { margin-top: 8px; }
+/* The task card: a long title stops at three lines so the rows below keep their room. */
+.task-card-title { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.task-title-input { font-size: 17px; }   /* NeverMind's task title field (index.html:1223) */
+.task-form-actions { margin: 6px 14px 0; }
+.s-current { display: flex; flex-shrink: 0; color: var(--amber); }
+.s-current svg { width: 18px; height: 18px; }
 
 /* Metric tiles — mockup.html .metrics/.metric: four in a row, no strip. */
 .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-top: 8px; }

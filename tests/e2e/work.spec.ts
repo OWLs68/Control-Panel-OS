@@ -4,8 +4,10 @@
  * Reading: the module takes its place in the bar (including on a phone whose
  * bar was saved before it existed), the five groups and the tiles, the honest
  * «локально» label, the selection Crow's envelope carries, and the demo reset
- * that leaves Roman's tasks alone. Tasks are put into storage directly here;
- * creating them on screen is the write path's job.
+ * that leaves Roman's tasks alone. Writing: a new task from the screen, a
+ * status changed from the task's card, the «Потребує мене» switch — each
+ * surviving a reload. Tasks for the reading tests are put into storage
+ * directly; the writing tests make them on screen.
  */
 import { expect, test, type Page } from '@playwright/test'
 import { gotoModule } from './helpers.js'
@@ -40,6 +42,33 @@ const taskRow = (page: Page, id: string) => page.locator(`[data-action="open-tas
 
 const tabOrder = (page: Page) =>
   page.locator('.tab-item').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.tab))
+
+/** A card modal that has finished popping in, so a tap lands where it is aimed. */
+async function cardOpen(page: Page, id: string): Promise<void> {
+  const card = page.locator(`#${id} .modal-card`)
+  await expect(card).toHaveClass(/open/)
+  await expect.poll(() => card.evaluate((el) => getComputedStyle(el).transform)).toBe('matrix(1, 0, 0, 1, 0, 0)')
+}
+
+/** Tap the backdrop, as a thumb would, and wait for the card to go. */
+async function closeCard(page: Page, id: string): Promise<void> {
+  await page.locator(`#${id}`).tap({ position: { x: 20, y: 20 } })
+  await expect(page.locator(`#${id}`)).toHaveCount(0)
+}
+
+const storedTasks = (page: Page) =>
+  page.evaluate(() => JSON.parse(localStorage.getItem('roma_tasks') ?? '[]') as Array<Record<string, unknown>>)
+
+/** Every button and action on `root` is at least 44px each way. */
+function smallTargets(root: Element): string[] {
+  const bad: string[] = []
+  root.querySelectorAll('button, [data-action]').forEach((el) => {
+    const r = el.getBoundingClientRect()
+    if (r.width === 0 || r.height === 0) return
+    if (r.height < 44 || r.width < 44) bad.push(`${(el as HTMLElement).className} ${Math.round(r.width)}x${Math.round(r.height)}`)
+  })
+  return bad
+}
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/')
@@ -114,6 +143,9 @@ test('a tapped task is selected, and Crow is told which one', async ({ page }) =
   await withTasks(page, [{ id: 't-1', title: 'Подзвонити бухгалтеру', at: 0 }])
   await gotoModule(page, 'work')
   await taskRow(page, 't-1').tap()
+  // The tap opens the task's card too; closing it keeps the task selected.
+  await cardOpen(page, 'task-card-modal')
+  await closeCard(page, 'task-card-modal')
   await expect(taskRow(page, 't-1')).toContainText('відкрито')
 
   await page.locator('#crow-input').tap()
@@ -138,20 +170,120 @@ test('the demo reset leaves Roman\'s tasks alone', async ({ page }) => {
   expect(await page.evaluate(() => (JSON.parse(localStorage.getItem('roma_tasks') ?? '[]') as unknown[]).length)).toBe(1)
 })
 
-test('every control on «Задачі» is at least 44px', async ({ page }) => {
+test('every control on «Задачі» and in both cards is at least 44px', async ({ page }) => {
   await withTasks(page, [
     { id: 't-1', title: 'Щось із дуже довгою назвою, яка не влізе в один рядок на телефоні', needsRoman: true, at: 0 },
     { id: 't-2', title: 'Готове', status: 'done', at: 1 },
   ])
   await gotoModule(page, 'work')
-  const small = await page.locator('#screen-work').evaluate((root) => {
-    const bad: string[] = []
-    root.querySelectorAll('button, [data-action]').forEach((el) => {
-      const r = el.getBoundingClientRect()
-      if (r.width === 0 || r.height === 0) return
-      if (r.height < 44 || r.width < 44) bad.push(`${(el as HTMLElement).className} ${Math.round(r.width)}x${Math.round(r.height)}`)
-    })
-    return bad
+  expect(await page.locator('#screen-work').evaluate(smallTargets)).toEqual([])
+
+  await taskRow(page, 't-1').tap()
+  await cardOpen(page, 'task-card-modal')
+  expect(await page.locator('#task-card-modal').evaluate(smallTargets)).toEqual([])
+  await closeCard(page, 'task-card-modal')
+
+  await page.locator('[data-action="task-new"]').tap()
+  await cardOpen(page, 'task-new-modal')
+  expect(await page.locator('#task-new-modal').evaluate(smallTargets)).toEqual([])
+})
+
+/* ── Writing ─────────────────────────────────────────────────────────── */
+
+test('a new task: one field, «Створити» — it lands in Беклог and survives a reload', async ({ page }) => {
+  await gotoModule(page, 'work')
+  await page.locator('[data-action="task-new"]').tap()
+  await cardOpen(page, 'task-new-modal')
+  // Focused by the tap that opened the card, so the phone's keyboard comes up with it.
+  await expect(page.locator('#task-new-title')).toBeFocused()
+  await page.locator('#task-new-title').fill('  Купити   квитки  ')
+  await page.locator('[data-action="task-create"]').tap()
+  await expect(page.locator('#task-new-modal')).toHaveCount(0)
+  await expect(group(page, 'Беклог').locator('.card-row-title')).toHaveText(['Купити квитки'])
+
+  await page.reload()
+  await ready(page)
+  await gotoModule(page, 'work')
+  await expect(group(page, 'Беклог').locator('.card-row-title')).toHaveText(['Купити квитки'])
+
+  const saved = await storedTasks(page)
+  expect(saved).toHaveLength(1)
+  expect(saved[0]).toMatchObject({
+    title: 'Купити квитки', status: 'backlog', needsRoman: false,
+    projectId: null, agentId: null, blockerId: null, deleted_at: null,
   })
-  expect(small).toEqual([])
+  expect(saved[0]?.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
+})
+
+test('Enter in the field creates the task as well', async ({ page }) => {
+  await gotoModule(page, 'work')
+  await page.locator('[data-action="task-new"]').tap()
+  await cardOpen(page, 'task-new-modal')
+  await page.locator('#task-new-title').fill('Через Enter')
+  await page.locator('#task-new-title').press('Enter')
+  await expect(page.locator('#task-new-modal')).toHaveCount(0)
+  await expect(group(page, 'Беклог').locator('.card-row-title')).toHaveText(['Через Enter'])
+})
+
+test('an empty title is refused, and nothing is saved', async ({ page }) => {
+  await gotoModule(page, 'work')
+  await page.locator('[data-action="task-new"]').tap()
+  await cardOpen(page, 'task-new-modal')
+  await page.locator('#task-new-title').fill('   ')
+  await page.locator('[data-action="task-create"]').tap()
+  await expect(page.locator('.toast').last()).toHaveText('Введи назву задачі')
+  await expect(page.locator('#task-new-modal')).toHaveCount(1)
+  expect(await storedTasks(page)).toHaveLength(0)
+})
+
+test('the status is changed from the task\'s card, and it sticks', async ({ page }) => {
+  await withTasks(page, [{ id: 't-1', title: 'Звіт за квартал', at: 0 }])
+  await gotoModule(page, 'work')
+  await taskRow(page, 't-1').tap()
+  await cardOpen(page, 'task-card-modal')
+
+  // Five statuses; the current one is marked.
+  const rows = page.locator('#task-card-modal [data-action="task-set-status"]')
+  await expect(rows).toHaveCount(5)
+  await expect(rows.filter({ hasText: 'Беклог' })).toHaveAttribute('aria-pressed', 'true')
+
+  await rows.filter({ hasText: 'У роботі' }).tap()
+  await expect(page.locator('#task-card-modal')).toHaveCount(0)
+  await expect(group(page, 'У роботі')).toContainText('Звіт за квартал')
+  await expect(group(page, 'Беклог')).toContainText('Порожньо')
+  expect(await page.locator('#screen-work .metric-num').allTextContents()).toEqual(['0', '1', '0', '0'])
+
+  await page.reload()
+  await ready(page)
+  await gotoModule(page, 'work')
+  await expect(group(page, 'У роботі')).toContainText('Звіт за квартал')
+  expect((await storedTasks(page))[0]).toMatchObject({ status: 'in_progress' })
+})
+
+test('«Потребує мене» is a switch on the card: the badge and the tile follow it, both ways', async ({ page }) => {
+  await withTasks(page, [{ id: 't-1', title: 'Рішення по бюджету', status: 'planned', at: 0 }])
+  await gotoModule(page, 'work')
+  await taskRow(page, 't-1').tap()
+  await cardOpen(page, 'task-card-modal')
+
+  const toggle = page.locator('#task-roman-row')
+  await expect(toggle).toHaveAttribute('aria-checked', 'false')
+  await toggle.tap()
+  await expect(page.locator('#task-roman-row')).toHaveAttribute('aria-checked', 'true')
+  // The card stays open; the board underneath has already caught up.
+  await expect(page.locator('#task-card-modal')).toHaveCount(1)
+  await expect(taskRow(page, 't-1')).toContainText('потребує мене')
+  await expect(page.locator('#screen-work .metric-num').first()).toHaveText('1')
+
+  await page.locator('#task-roman-row').tap()
+  await expect(page.locator('#task-roman-row')).toHaveAttribute('aria-checked', 'false')
+  await expect(page.locator('#screen-work .metric-num').first()).toHaveText('0')
+
+  await page.locator('#task-roman-row').tap()
+  await closeCard(page, 'task-card-modal')
+  await page.reload()
+  await ready(page)
+  await gotoModule(page, 'work')
+  await expect(taskRow(page, 't-1')).toContainText('потребує мене')
+  expect((await storedTasks(page))[0]).toMatchObject({ needsRoman: true, status: 'planned' })
 })

@@ -23,6 +23,7 @@ import { openModules } from '../nav/shell.js'
 import { openCardModal, closeCardModal, type CardModalHandle } from './card-modal.js'
 import { deployLabel, hardRefresh, showDeployInfo } from './deploy-info.js'
 import { icons } from './icons.js'
+import { modalRow as row, modalToggle as toggle } from './modal-row.js'
 import { showToast } from './toast.js'
 
 const MODAL_ID = 'settings-modal'
@@ -108,7 +109,7 @@ export function openSettings(): void {
           ${chatRow()}
           ${row({
             action: 'settings-reset-demo', icon: icons.refresh, tone: 'ink',
-            title: 'Скинути демо-дані', sub: 'Стартовий набір: агенти, проєкти, події', right: CHEVRON,
+            title: 'Скинути демо-дані', sub: 'Агенти, проєкти, події; задачі не чіпає', right: CHEVRON,
           })}
           ${sourceRow()}
           ${gatewayRow()}
@@ -135,40 +136,6 @@ export function openSettings(): void {
 function close(): void {
   if (modal) modal.close()
   else closeCardModal(MODAL_ID)
-}
-
-interface RowSpec {
-  action?: string
-  id?: string
-  icon: string
-  tone: 'amber' | 'ink'
-  title: string
-  sub?: string
-  right?: string
-  disabled?: boolean
-  /** For a switch row: aria-checked. */
-  checked?: boolean
-}
-
-/** The donor's .s-row (index.html:1266–1279): icon, text, something on the right. */
-function row(r: RowSpec): string {
-  const inner = `
-    <div class="s-row-left">
-      <div class="s-icon s-icon-${r.tone}">${r.icon}</div>
-      <div class="s-row-text">
-        <div class="s-row-title">${escapeHtml(r.title)}</div>
-        ${r.sub ? `<div class="s-row-sub">${escapeHtml(r.sub)}</div>` : ''}
-      </div>
-    </div>
-    ${r.right ?? ''}`
-  const id = r.id ? ` id="${r.id}"` : ''
-  if (!r.action) return `<div class="s-row s-row-static"${id}>${inner}</div>`
-  const role = r.checked === undefined ? '' : ` role="switch" aria-checked="${r.checked}"`
-  return `<button type="button" class="s-row"${id} data-action="${r.action}"${role}${r.disabled ? ' disabled' : ''}>${inner}</button>`
-}
-
-function toggle(on: boolean): string {
-  return `<span class="s-toggle${on ? ' on' : ''}"><span class="s-toggle-thumb"></span></span>`
 }
 
 function voiceRow(): string {
