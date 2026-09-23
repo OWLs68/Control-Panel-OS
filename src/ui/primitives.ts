@@ -4,7 +4,7 @@
  */
 import { escapeHtml } from '../core/dom.js'
 import { icons, type IconName } from './icons.js'
-import type { Sourced } from '../data/types.js'
+import type { Origin, Sourced } from '../data/types.js'
 
 export type Tone = 'neutral' | 'success' | 'warning' | 'error' | 'info' | 'amber'
 
@@ -31,6 +31,8 @@ export interface RowOptions {
   trailing?: string
   action?: string
   data?: Record<string, string>
+  /** An extra class on the row, e.g. 'is-done'. */
+  className?: string
 }
 
 export function row(opts: RowOptions): string {
@@ -39,7 +41,8 @@ export function row(opts: RowOptions): string {
     .join('')
   const tag = opts.action ? 'button' : 'div'
   const actionAttr = opts.action ? ` data-action="${escapeHtml(opts.action)}"` : ''
-  return `<${tag} class="card-row"${actionAttr}${attrs}>
+  const cls = opts.className ? `card-row ${escapeHtml(opts.className)}` : 'card-row'
+  return `<${tag} class="${cls}"${actionAttr}${attrs}>
     ${opts.lead ?? ''}
     <span class="card-row-body">
       <span class="card-row-title">${escapeHtml(opts.title)}</span>
@@ -89,9 +92,11 @@ export function empty(icon: IconName, title: string, sub: string): string {
   </div>`
 }
 
-/** Says out loud whether what you are reading is real or a fixture. */
+const ORIGIN_LABEL: Record<Origin, string> = { mock: 'демо', live: 'наживо', local: 'локально' }
+
+/** Says out loud whether what you are reading is a fixture, the live system, or data kept on this device. */
 export function sourceTag(src: Sourced<unknown>): string {
-  const label = src.origin === 'mock' ? 'демо' : 'наживо'
+  const label = ORIGIN_LABEL[src.origin]
   return `<span class="source-tag" data-origin="${src.origin}" title="${escapeHtml(src.source)}">${label}</span>`
 }
 

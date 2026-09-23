@@ -29,6 +29,7 @@ export const icons = {
   note: s('<path d="M13 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9.5z"/><path d="M13 3.5v6h6M8.5 14h7"/>'),
   refresh: s('<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v4.5h-4.5"/>'),
   broom: s('<path d="M4 20 10.5 13.5"/><path d="m13 4 7 7-6.5 6.5a2 2 0 0 1-2.8 0L8.5 15.3a2 2 0 0 1 0-2.8z"/>'),
+  tasks: s('<path d="m3.5 6.5 1.8 1.8 3.2-3.3"/><path d="M11.5 6.5h9"/><path d="m3.5 12.5 1.8 1.8 3.2-3.3"/><path d="M11.5 12.5h9"/><path d="M4 18.5h4M11.5 18.5h9"/>'),
 } as const
 
 export type IconName = keyof typeof icons
