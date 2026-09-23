@@ -36,17 +36,17 @@ test('a module can be switched on, and it survives a reload', async ({ page }) =
 })
 
 test('a module switched on takes its registry place, not the end', async ({ page }) => {
-  // Registry order is control, agents, projects, memory, events; memory is off
-  // by default. NeverMind re-sorts on switch-on, so it lands before events.
+  // Registry order is control, work, agents, projects, memory, events; memory is
+  // off by default. NeverMind re-sorts on switch-on, so it lands before events.
   await page.locator('[data-action="open-modules"]').tap()
   await page.locator('.mod-card[data-id="memory"]').tap()
   const strip = await page.locator('.mod-order-name').allTextContents()
-  expect(strip).toEqual(['Control', 'Агенти', 'Проєкти', 'Памʼять', 'Події'])
+  expect(strip).toEqual(['Control', 'Задачі', 'Агенти', 'Проєкти', 'Памʼять', 'Події'])
 
   await page.locator('[data-action="apply-modules"]').tap()
   const order = await page.locator('.tab-item').evaluateAll((els) =>
     els.map((e) => (e as HTMLElement).dataset.tab))
-  expect(order).toEqual(['control', 'agents', 'projects', 'memory', 'events'])
+  expect(order).toEqual(['control', 'work', 'agents', 'projects', 'memory', 'events'])
 })
 
 test('a hidden module leaves the bar but keeps its data', async ({ page }) => {
@@ -131,12 +131,12 @@ test('the order of modules can be changed and it sticks', async ({ page }) => {
 
 test('nothing can be moved in front of Control', async ({ page }) => {
   await page.locator('[data-action="open-modules"]').tap()
-  await page.locator('.mod-order-item', { hasText: 'Агенти' }).tap()
+  await page.locator('.mod-order-item', { hasText: 'Задачі' }).tap()
   // Second in the strip: ‹ would put it before Control, so it is greyed out.
   await expect(page.locator('[data-action="move-order"][data-dir="-1"]')).toBeDisabled()
   await expect(page.locator('[data-action="move-order"][data-dir="1"]')).toBeEnabled()
 
   await page.locator('[data-action="move-order"][data-dir="1"]').tap()
   const strip = await page.locator('.mod-order-name').allTextContents()
-  expect(strip).toEqual(['Control', 'Проєкти', 'Агенти', 'Події'])
+  expect(strip).toEqual(['Control', 'Агенти', 'Задачі', 'Проєкти', 'Події'])
 })

@@ -272,7 +272,7 @@ test('the console stays clean on every screen', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
   page.on('console', (m) => { if (m.type() === 'error' && !m.text().includes('font')) errors.push(m.text()) })
-  for (const id of ['agents', 'projects', 'events', 'control']) {
+  for (const id of ['work', 'agents', 'projects', 'events', 'control']) {
     await gotoModule(page, id)
     await page.waitForTimeout(200)
   }

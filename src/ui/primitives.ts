@@ -31,6 +31,8 @@ export interface RowOptions {
   trailing?: string
   action?: string
   data?: Record<string, string>
+  /** An extra class on the row, e.g. 'is-done'. */
+  className?: string
 }
 
 export function row(opts: RowOptions): string {
@@ -39,7 +41,8 @@ export function row(opts: RowOptions): string {
     .join('')
   const tag = opts.action ? 'button' : 'div'
   const actionAttr = opts.action ? ` data-action="${escapeHtml(opts.action)}"` : ''
-  return `<${tag} class="card-row"${actionAttr}${attrs}>
+  const cls = opts.className ? `card-row ${escapeHtml(opts.className)}` : 'card-row'
+  return `<${tag} class="${cls}"${actionAttr}${attrs}>
     ${opts.lead ?? ''}
     <span class="card-row-body">
       <span class="card-row-title">${escapeHtml(opts.title)}</span>
