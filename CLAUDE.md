@@ -155,15 +155,19 @@ admin-панель) — лишилась у гілці `legacy/control-panel-v1`
   імʼя файла, `contentMimeType: text/markdown`,
   `disableConversionToGoogleType: true`.
   Snapshot — новий незмінний Markdown-файл
-  `YYYY-MM-DD_HHMMSS_<finish|merge>_<short-head>.md` (час машини, секунди
-  обовʼязкові): короткий, але самодостатній зріз, не diff; без secrets,
-  tokens, credentials і зайвих приватних даних; лише перевірені факти:
+  `YYYY-MM-DD_HHMMSS_<finish|merge>_<short-head>.md`, секунди обовʼязкові.
+  Час — і в імені, і в `timestamp` — **завжди в поясі `Europe/Amsterdam`**:
+  `TZ=Europe/Amsterdam date …`, offset (+01:00 / +02:00) визначає DST сам,
+  не хардкодити. Вийшов `+00:00` — на машині немає tzdata: не підміняти
+  вручну, назвати Роману. Snapshot — короткий, але самодостатній зріз, не
+  diff; без secrets, tokens, credentials і зайвих приватних даних; лише
+  перевірені факти:
 
   ```md
   # Crow OS MP — Project Sync
 
   event: finish | merge
-  timestamp: <ISO 8601 з offset, фактичний з машини: date +%Y-%m-%dT%H:%M:%S%:z>
+  timestamp: <ISO 8601 з offset: TZ=Europe/Amsterdam date +%Y-%m-%dT%H:%M:%S%:z>
   repo: OWLs68/Control-Panel-OS
   session_id: <з .claude/.session-runtime.json, якщо є>
   branch: <поточна гілка>
