@@ -134,7 +134,58 @@ admin-панель) — лишилась у гілці `legacy/control-panel-v1`
 ## Правила, які не обговорюються
 
 - **Канонічні документи Crow AI OS в Google Drive — read-only.** Читати можна,
-  змінювати не можна. Нові документи там не створювати.
+  змінювати не можна. Нові документи там не створювати. **Єдиний виняток —
+  Project Sync.** Єдиний write-scope Claude Code у Drive для цього repo — тека
+  `Crow AI OS / Components / Crow OS MP / Claude Sync`
+  (ID `1PfcuB_Y6troEwDSQzglNxL-3_nFUd9qS`,
+  https://drive.google.com/drive/folders/1PfcuB_Y6troEwDSQzglNxL-3_nFUd9qS).
+  Там — лише **створювати нові** snapshot-файли: старі не редагувати й не
+  перезаписувати; у Drive нічого не move / rename / trash / delete. Будь-який
+  запис поза `Claude Sync` — заборонено без окремого дозволу Романа.
+  `Claude Sync` — transport/outbox для майбутнього synchronizer, **не**
+  джерело правди. Кожен буквальний `/finish` і кожен дозволений успішний
+  merge уже включають дозвіл рівно на один відповідний snapshot (`finish` /
+  `merge`) — окремо не питати; `finish` — крок 6 `.claude/commands/finish.md`,
+  `merge` — нагадує PostToolUse hook `.claude/hooks/after-merge-sync.mjs`.
+  Не вдалося створити — `Drive sync: FAILED` + причина Роману; нікуди більше
+  не писати, канонічні документи не чіпати.
+  Запис — `mcp__Google_Drive__create_file`: `parentId` цієї теки, `title` =
+  імʼя файла, `contentMimeType: text/markdown`,
+  `disableConversionToGoogleType: true`.
+  Snapshot — новий незмінний Markdown-файл
+  `YYYY-MM-DD_HHMMSS_<finish|merge>_<short-head>.md` (час машини, секунди
+  обовʼязкові): короткий, але самодостатній зріз, не diff; без secrets,
+  tokens, credentials і зайвих приватних даних; лише перевірені факти:
+
+  ```md
+  # Crow OS MP — Project Sync
+
+  event: finish | merge
+  timestamp: <ISO 8601 з offset, фактичний з машини: date +%Y-%m-%dT%H:%M:%S%:z>
+  repo: OWLs68/Control-Panel-OS
+  session_id: <з .claude/.session-runtime.json, якщо є>
+  branch: <поточна гілка>
+  head: <HEAD>
+  main_local: <локальний main>
+  main_remote: <origin/main після fetch, або unknown>
+  working_tree: clean | dirty
+
+  ## Current state
+  <3–8 коротких фактів про реальний стан, включно з push-статусом>
+  ## Latest completed
+  <що фактично завершено / змінилось до цієї точки>
+  ## Decisions / constraints
+  <лише актуальні, що впливають на продовження; не копія CLAUDE.md>
+  ## Blockers
+  <актуальні або None>
+  ## Next
+  <1–3 реальні кроки>
+  ## Verification
+  <verify / e2e / CI — тільки фактично відомий стан>
+  ## System docs impact
+  <що може потребувати синхронізації в «Crow AI OS — Current State»,
+  «Crow AI OS — Core Rules», «Crow OS MP — Product / Interface Spec», або None>
+  ```
 - **NeverMind (`OWLs68/NeverMind`) — донор UI/UX, read-only.** Звідти беремо
   механіки й візуальну базу; це не архітектурне джерело правди. Не редагуємо.
 - **Перед кожним компонентом — знайти аналог у NeverMind і перевірити його
@@ -188,7 +239,8 @@ admin-панель) — лишилась у гілці `legacy/control-panel-v1`
 її вимагає.
 
 **`/finish`** — закриття сесії, окремий явний контракт: checkpoint і
-службові документи → локальний коміт → push робочої гілки. **Ніколи не
+службові документи → локальний коміт → push робочої гілки → новий
+`finish`-snapshot у `Claude Sync` (правило Drive вище). **Ніколи не
 merge у `main`.** Якщо Роман каже «/finish, але не push» — push не робити.
 Переписує лише «ПОТОЧНИЙ СТАН» (це стан), **дописує** блок у
 `SESSION_LOG.md` (це журнал: старі рішення і задачі лишаються, нові
