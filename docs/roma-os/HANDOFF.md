@@ -20,34 +20,32 @@
 > «поточний HEAD». Актуальний HEAD тут не зберігається взагалі: `/start`
 > бере його через `git rev-parse HEAD`.
 
-- **session_id:** `20260921-1738-xkbygw`
-- **started_at:** `2026-09-21T17:38:42Z`
-- **branch:** `claude/new-session-xkbygw`
-- **start_head:** `4808644`
-- **start_main:** `4808644`
-- **work_end_head:** `f9137f4` (перший зріз «Задач»; у `main` ще немає)
+- **session_id:** `20260923-1903-xgrk8r` (наближення: `/start` не запускався, межі — з reflog)
+- **started_at:** `2026-09-23T19:03:51Z`
+- **branch:** `claude/fervent-johnson-xgrk8r`
+- **start_head:** `05a72d3`
+- **start_main:** `05a72d3`
+- **work_end_head:** `858466b`
 
-**Де зупинились.** Docs reconciliation (Crow AI OS / Crow OS MP, джерела
-правди, одне правило дозволу) у `main` з `05a72d3`. Потім у гілці перший зріз
-native work tracker — модуль «Задачі» (`work`), три batch-коміти: `0ee5081`
-(модель Task, `taskStore`, чисті правила `src/data/tasks.ts`, адаптер, мітка
-«локально», разова міграція барабана), `5bb1a0d` (екран: 4 плитки, 5 груп,
-вибір для envelope), `f9137f4` (створення, зміна статусу, тумблер «Потребує
-мене»). Задачі справжні, лише на пристрої, скидання демо їх не чіпає.
-verify ✅ 44 unit · e2e ✅ 74/74 (Chromium). Деталі — журнал сесії.
+**Де зупинились.** Перший зріз «Задач» (сесія `xkbygw`) і документи Batch 3
+(`73e4dad`) — у `main` merge-комітом `e1684e5`: CI 88 ✅, deploy 33 ✅, живий
+URL на `e1684e5`. Потім у гілці — Project Sync (`f589462`, `1d8dec0`,
+`858466b`): Drive-тека `Claude Sync`, правило й формат snapshot у `CLAUDE.md`
+(«Правила», перший пункт), крок 6 `/finish`, PostToolUse hook
+`.claude/hooks/after-merge-sync.mjs` — snapshot лише коли merge оновлює
+`main`. Гілку запушено; у `main` Project Sync ще немає.
 
 **Blockers.** Немає.
 
-**Наступний крок.** Дописати документи Batch 3: `CLAUDE.md` (правило
-NeverMind «донор і референс, не шаблон» у HOT RULE 1 і в «Правилах»; абзац
-про work tracker — зріз є), `PORTING.md §1, §6` (те саме правило; рядки
-переносу й відступів «Задач»), `README.md` (рядок модулів), `GATEWAY.md §6`
-(`roma_tasks`). Потім push/merge за словом, телефон — `STAGE-1.md §6.6`.
+**Наступний крок.** «merge» Project Sync у `main` — лише за словом; hook діє
+в сесіях, чия гілка його містить. Далі — «Задачі» на iPhone за
+`STAGE-1.md §6.6` на живому URL.
 
 **Чекає рішення Романа.**
-1. «merge» гілки з трьома комітами «Задач» у `main` (після документів)
+1. «merge» гілки з Project Sync у `main`
 2. Перевірка «Задач» на iPhone за `STAGE-1.md §6.6`
-3. Далі за backlog: види в Проєктах/Агентах, Control, редагування й видалення
+3. Envelope «Задач» без вибору несе до пʼяти назв «потребує Романа» (`GATEWAY.md §6`) — лишити чи обмежити
+4. Далі за backlog: види задач у Проєктах/Агентах; Control «Потребує мене»; редагування й видалення; якість відповідей Crow
 
 ---
 

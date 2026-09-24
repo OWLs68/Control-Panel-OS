@@ -14,6 +14,39 @@
 
 ---
 
+## 2026-09-23 — 20260923-1903-xgrk8r — «Задачі» в main, Project Sync
+
+- Зроблено: гілку `claude/new-session-xkbygw` влито fast-forward до `89bc263`
+  (CI 86 ✅); документи Batch 3 — `73e4dad`: `CLAUDE.md` (NeverMind — донор і
+  референс; абзац work tracker), `PORTING.md` §1/§2/§3/§5/§6, `README.md`,
+  `GATEWAY.md §6` (`roma_tasks` лише на телефоні); CI 87 ✅.
+- Зроблено: merge у `main` — `e1684e5` (перед ним verify ✅ 44 unit, e2e ✅
+  74/74 Chromium); CI 88 ✅, deploy 33 ✅ — «Задачі» на живому URL.
+- Зроблено: Project Sync — Drive-тека `Components / Crow OS MP / Claude Sync`
+  (`1PfcuB_Y6troEwDSQzglNxL-3_nFUd9qS`); `f589462` — правило й формат
+  snapshot у `CLAUDE.md`, крок 6 `/finish`, `.claude/settings.json`
+  (PostToolUse, `Bash`, `if: Bash(git merge *)`), hook
+  `.claude/hooks/after-merge-sync.mjs`; `1d8dec0` — snapshot лише коли merge
+  оновлює `main` (reflog `main`: merge тієї ж гілки під час команди);
+  `858466b` — `CLAUDE.md` під це.
+- Рішення Романа: NeverMind — донор і референс, не шаблон (23.09). Drive
+  write-scope Claude — лише створення нових snapshot у `Claude Sync`, без
+  правок, move, rename, trash; snapshot — при кожному `/finish` і кожному
+  дозволеному merge, що оновлює `main`; merge у робочі гілки — без snapshot
+  (24.09). Push гілки — окремим словом; `main` після `e1684e5` не чіпали.
+- Інциденти: перша спроба merge у `main` — `git merge -F -` не читає stdin,
+  merge не відбувся, нічого не змінилось; повторено з файлом повідомлення.
+  `npm run lint` упав на hook (`process` без імпорту) — виправлено до коміту.
+- Відкрито / далі: merge Project Sync у `main`; hook наживо ще не
+  спрацьовував — перевірено на підроблених payload і тимчасовому repo;
+  телефон — `STAGE-1.md §6.6`; envelope «Задач» без вибору несе до пʼяти
+  назв (`GATEWAY.md §6`) — рішення Романа.
+
+Branch `claude/fervent-johnson-xgrk8r` · Start `05a72d3` · Work end `858466b`
+· verify ✅ · e2e ✅ 74/74 (перед merge) · CI 88 ✅ `main` · deploy 33 ✅
+
+---
+
 ## 2026-09-21 — 20260921-1738-xkbygw — приймання зрізу 2 на Mac та iPhone, синхронізація документів
 
 - Зроблено: `/start` — docs-хвіст `nouemk` (доповнення журналу 19:26) влито
