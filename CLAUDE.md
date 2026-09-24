@@ -143,10 +143,12 @@ admin-панель) — лишилась у гілці `legacy/control-panel-v1`
   перезаписувати; у Drive нічого не move / rename / trash / delete. Будь-який
   запис поза `Claude Sync` — заборонено без окремого дозволу Романа.
   `Claude Sync` — transport/outbox для майбутнього synchronizer, **не**
-  джерело правди. Кожен буквальний `/finish` і кожен дозволений успішний
-  merge уже включають дозвіл рівно на один відповідний snapshot (`finish` /
-  `merge`) — окремо не питати; `finish` — крок 6 `.claude/commands/finish.md`,
-  `merge` — нагадує PostToolUse hook `.claude/hooks/after-merge-sync.mjs`.
+  джерело правди. Snapshot створюється при кожному буквальному `/finish` і
+  при кожному дозволеному успішному merge, який оновлює `main`; merge у
+  робочі гілки snapshot не створює. Ці події вже включають дозвіл рівно на
+  один відповідний snapshot (`finish` / `merge`) — окремо не питати;
+  `finish` — крок 6 `.claude/commands/finish.md`, `merge` — нагадує
+  PostToolUse hook `.claude/hooks/after-merge-sync.mjs`.
   Не вдалося створити — `Drive sync: FAILED` + причина Роману; нікуди більше
   не писати, канонічні документи не чіпати.
   Запис — `mcp__Google_Drive__create_file`: `parentId` цієї теки, `title` =
