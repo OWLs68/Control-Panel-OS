@@ -33,12 +33,31 @@ export interface Project extends Entity {
   ownerAgentId: string | null
 }
 
+/**
+ * What a producer — Crow/Hermes, an agent, a script on the Mac — may report to
+ * the Event Center (the Roma gateway, `POST /api/v1/events`).
+ */
+export type AgentEventKind = 'agent_started' | 'agent_result' | 'agent_finished' | 'agent_blocked' | 'alert'
+
+/**
+ * One thing that happened. The same contract for the demo feed and the live
+ * one: the demo fixtures use the first five kinds and leave the agent fields
+ * out; live events come from the Event Center with every field set.
+ */
 export interface SystemEvent extends Entity {
+  /** When it happened (ms). `created_at` is when the Event Center received it. */
   ts: number
-  kind: 'deploy' | 'index' | 'backup' | 'agent' | 'note'
+  kind: 'deploy' | 'index' | 'backup' | 'agent' | 'note' | AgentEventKind
   title: string
   detail: string
+  /** Who reported it, e.g. 'shopping-scout' or 'curl'. */
   source: string
+  agentId?: string | null
+  taskId?: string | null
+  projectId?: string | null
+  severity?: Severity
+  /** Roman has to act. A flag across kinds, like a task's — not a kind of its own. */
+  needsRoman?: boolean
 }
 
 export type TaskStatus = 'backlog' | 'planned' | 'in_progress' | 'blocked' | 'done'

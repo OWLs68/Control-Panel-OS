@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Roma gateway — the one door from the phone to GBrain: read-only, behind Tailscale, on the Mac.",
+  "description": "Roma gateway — Crow OS MP's one door on the Mac: GBrain (read-only), Hermes and the Event Center, behind Tailscale.",
   "engines": {
     "node": ">=22.18"
   },

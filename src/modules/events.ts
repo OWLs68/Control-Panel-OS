@@ -3,14 +3,17 @@ import { relativeTime } from '../core/dom.js'
 import { getAdapter } from '../data/adapters.js'
 import type { SystemEvent } from '../data/types.js'
 import { icons } from '../ui/icons.js'
-import { badge, card, cardHead, empty, row, sourceTag } from '../ui/primitives.js'
+import { badge, card, cardHead, empty, row, sourceTag, type Tone } from '../ui/primitives.js'
 import { registerModule, type ModuleContext } from './registry.js'
 
+// The first five are the demo feed's; the agent kinds come from the Event Center.
 const kindLabel: Record<SystemEvent['kind'], string> = {
   deploy: 'деплой', index: 'індекс', backup: 'бекап', agent: 'агент', note: 'запис',
+  agent_started: 'почав', agent_result: 'результат', agent_finished: 'завершив', agent_blocked: 'заблоковано', alert: 'важливо',
 }
-const kindTone: Record<SystemEvent['kind'], 'info' | 'success' | 'neutral' | 'amber'> = {
+const kindTone: Record<SystemEvent['kind'], Tone> = {
   deploy: 'info', index: 'amber', backup: 'success', agent: 'info', note: 'neutral',
+  agent_started: 'info', agent_result: 'success', agent_finished: 'neutral', agent_blocked: 'warning', alert: 'amber',
 }
 
 function render(root: HTMLElement): void {
