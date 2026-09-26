@@ -243,7 +243,16 @@ test('live events: the Event Center feed on «Події» and on Control, marke
   const control = page.locator('#screen-control')
   await expect(control.locator('.metric').nth(3).locator('.metric-num')).toHaveText('2')
   await expect(control.locator('.map-edge[data-node="events"]')).toHaveAttribute('data-edge', 'live')
-  await expect(control.getByText('Тест з Mac')).toBeVisible()
+  await expect(control.locator('.card', { hasText: 'Стан системи' })).toContainText('Тест з Mac')
+
+  // «Потребує мене» reads the very same events: one of the two waits on Roman.
+  await expect(control.locator('.metric').first().locator('.metric-num')).toHaveText('1')
+  const needsMe = control.locator('.card', { hasText: 'Потребує мене' })
+  await expect(needsMe.locator('.card-row-title')).toHaveText(['Тест з Mac'])
+  await expect(needsMe.locator('.badge')).toHaveText(['потребує мене'])
+  await expect(needsMe.locator('.source-tag')).toHaveAttribute('data-origin', 'live')
+  await expect(needsMe.locator('.source-tag')).toHaveAttribute('title', 'gateway:events')
+  await expect(control.getByText('Наживо ще немає даних')).toHaveCount(0)
 
   await gotoModule(page, 'events')
   const screen = page.locator('#screen-events')
@@ -291,6 +300,26 @@ test('when the Mac is gone the last events stay, with their age and the reason',
   await expect(screen.getByText('Тест з Mac')).toBeVisible()
   await expect(screen.locator('.source-tag')).toHaveAttribute('data-origin', 'live')
   await expect(screen.locator('.data-notice')).toContainText('Оновлено щойно · Mac недоступний')
+})
+
+test('live events with nothing waiting: Control shows a real zero, not «немає даних»', async ({ page }) => {
+  await page.route(`${GW}/**`, (route) => serveJson(route, 200, snapshot([FACT_78], [EV_DONE])))
+  await bootLive(page)
+  await ready(page)
+
+  const control = page.locator('#screen-control')
+  await expect(control.locator('.metric').first().locator('.metric-num')).toHaveText('0')
+  const needsMe = control.locator('.card', { hasText: 'Потребує мене' })
+  await expect(needsMe.getByText('Нічого не чекає')).toBeVisible()
+  await expect(needsMe.locator('.card-row')).toHaveCount(0)
+  await expect(control.getByText('Наживо ще немає даних')).toHaveCount(0)
+
+  // Crow's greeting is recomputed when a screen is entered (shell.ts greet()),
+  // so come back to Control: it must no longer say the block is not connected.
+  await gotoModule(page, 'events')
+  await gotoModule(page, 'control')
+  await expect(page.locator('#crow-text')).toContainText('Нічого не чекає на тебе')
+  await expect(page.locator('#crow-text')).not.toContainText('не підʼєднане')
 })
 
 test('an empty live feed is live and empty, not demo', async ({ page }) => {

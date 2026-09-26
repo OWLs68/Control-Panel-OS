@@ -62,13 +62,32 @@ export function getAdapter(): DataAdapter {
 }
 
 /**
- * «Потребує мене» in live mode has no live source yet: the attention list is
- * still the demo fixtures. Shown next to live data, those rows would read as
- * real things waiting on Roman — so in live mode Control, Crow's greeting and
- * the bell do not show them at all, and say so instead.
+ * The attention list has no live source: it is still the demo fixtures. Shown
+ * next to live data, those rows would read as real things waiting on Roman —
+ * so in live mode Control, Crow's greeting and the bell do not show them at
+ * all, and say so instead. With the Event Center on, Control's «Потребує мене»
+ * reads the live events instead; see `needsRomanEvents` below.
  */
 export function attentionIsDemoInLive(adapter: DataAdapter = active): boolean {
   return adapter.origin === 'live' && adapter.attention().origin !== 'live'
+}
+
+/**
+ * How many events one «Потребує мене» read looks at: the same window Control
+ * and «Події» already read, so both screens agree on order and on what is in
+ * view.
+ */
+const NEEDS_ROMAN_WINDOW = 40
+
+/**
+ * Live «Потребує мене» — the very events «Події» shows, filtered by the flag
+ * and already newest first. Null when there is no live feed: then Control
+ * keeps the demo attention list and says so, exactly as before.
+ */
+export function needsRomanEvents(adapter: DataAdapter = active): Sourced<SystemEvent[]> | null {
+  const feed = adapter.events(NEEDS_ROMAN_WINDOW)
+  if (feed.origin !== 'live') return null
+  return { ...feed, value: feed.value.filter((e) => e.needsRoman === true) }
 }
 
 /**
