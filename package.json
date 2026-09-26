@@ -6,7 +6,7 @@
     "server/roma-gateway"
   ],
   "type": "module",
-  "description": "Roma OS — інтерфейс-оболонка операційної системи Roman AI OS (PWA)",
+  "description": "Crow OS MP — змінний інтерфейс Crow AI OS (PWA)",
   "scripts": {
     "build": "node build.js",
     "lint": "eslint .",

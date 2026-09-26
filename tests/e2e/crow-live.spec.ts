@@ -6,6 +6,7 @@
  * demo mode still answers from the stub without touching the network.
  */
 import { expect, test, type Page, type Route } from '@playwright/test'
+import { gotoModule } from './helpers.js'
 
 // As in live.spec.ts: the worker passes cross-origin requests through, but
 // headless WebKit hides pass-through requests from Playwright's routing.
@@ -100,8 +101,9 @@ test('live: the gateway carries the screen context — ask about a blocker with 
   })
   await bootLive(page)
   await ready(page)
-  await page.locator('[data-action="open-attention"]', { hasText: 'Окремі ключі для клієнтів' }).tap()
-  await expect(page.locator('#screen-projects')).toHaveClass(/active/)
+  // Live Control no longer lists the demo attention rows, so the blocker is picked where it lives: Projects.
+  await gotoModule(page, 'projects')
+  await page.locator('[data-action="toggle-blocker"]', { hasText: 'Окремі ключі для клієнтів' }).tap()
   await send(page, 'А чого це заблоковано?')
   // The Projects module names the selection as «project › blocker» (projects.ts context()).
   await expect(page.locator('.msg-bubble--agent').last()).toHaveText('Про «Roman AI OS / GBrain › Окремі ключі для клієнтів»')
@@ -142,7 +144,7 @@ test('live without an address: Crow says so instead of pretending', async ({ pag
 test('demo: the stub still answers and nothing leaves the phone', async ({ page }) => {
   const seen = routeGateway(page, async (_body, route) => { await route.abort('failed') })
   await ready(page)
-  await expect(page.locator('#screen-control')).toContainText('працює на заглушці')
+  await expect(page.locator('#screen-control')).toContainText('Crow відповідає із заглушки')
   // No stub keyword in the text («crow», «агент», «блок»…): the default reply is the one that names the stub.
   await send(page, 'Привіт')
   await expect(page.locator('.msg-bubble--agent').last()).toContainText('відповідаю із заглушки')

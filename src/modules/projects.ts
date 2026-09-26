@@ -104,7 +104,7 @@ function greeting() {
     priority: (blockers.length ? 'urgent' : 'success') as 'urgent' | 'success',
     chips: [
       { id: 'proj-blocked', label: 'А чого це заблоковано?', action: 'chat' as const, tone: 'accent' as const },
-      { id: 'proj-next', label: 'Що далі по Roma OS?', action: 'chat' as const },
+      { id: 'proj-next', label: 'Що далі по Crow OS MP?', action: 'chat' as const },
     ],
   }
 }

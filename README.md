@@ -64,7 +64,7 @@ src/
 docs/roma-os/         HANDOFF, STAGE-0/1, PORTING, ISSUES, GATEWAY, SESSION_LOG, мокап, зображення Crow (назва теки історична)
 scripts/              сторож кордону, статичний сервер, smoke-тест деплою
 tests/                unit/ + e2e/
-server/roma-gateway/  окремий сервіс для Mac: телефон → GBrain (читання) і → Hermes (Crow) (docs/roma-os/GATEWAY.md)
+server/roma-gateway/  окремий сервіс для Mac: телефон → GBrain (читання), → Hermes (Crow), ← Event Center (події від producer'ів на Mac) (docs/roma-os/GATEWAY.md)
 ```
 
 ## Правила, які тримають цю збірку

@@ -25,7 +25,7 @@ test('the gear replaces the magnifier and opens the settings card', async ({ pag
   await openSettings(page)
   const card = page.locator('#settings-modal .modal-card')
   await expect(card.locator('.settings-title')).toHaveText('Налаштування')
-  await expect(card.locator('.settings-version')).toHaveText(/^Roma OS · v(dev|\d+)$/)
+  await expect(card.locator('.settings-version')).toHaveText(/^Crow OS MP · v(dev|\d+)$/)
   // The dim layer is a top-level sibling of the modal, never a child.
   await expect(page.locator('body > #settings-modal-dim')).toHaveCount(1)
   await expect(page.locator('#settings-modal .modal-dim')).toHaveCount(0)

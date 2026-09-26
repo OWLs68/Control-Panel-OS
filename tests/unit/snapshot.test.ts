@@ -65,3 +65,31 @@ test('the state path is appended to the cleaned address', async () => {
   await fetchSnapshot('https://mac.tailnet.ts.net/')
   assert.equal(called, 'https://mac.tailnet.ts.net/api/v1/state')
 })
+
+const EVENT = {
+  id: 'curl:test:1', user_id: null, created_at: '2026-09-26T10:00:00.000Z', updated_at: '2026-09-26T10:00:00.000Z',
+  deleted_at: null, hlc: null, ts: Date.parse('2026-09-26T10:00:00.000Z'), kind: 'alert', title: 'Тест з Mac',
+  detail: '', source: 'curl', agentId: null, taskId: null, projectId: null, severity: 'info', needsRoman: true,
+}
+
+test('events ride along when the Event Center is on; without the key the snapshot has none', () => {
+  const withEvents = parseSnapshot({ ...SNAPSHOT, events: [EVENT] })
+  assert.deepEqual(withEvents?.events, [EVENT])
+  assert.equal('events' in (parseSnapshot(SNAPSHOT) ?? {}), false)
+  assert.deepEqual(parseSnapshot({ ...SNAPSHOT, events: [] })?.events, [])
+})
+
+test('an event the phone cannot render is left out; it never takes memory down with it', () => {
+  const snap = parseSnapshot({
+    ...SNAPSHOT,
+    events: [EVENT, { ...EVENT, id: 'x', kind: 'teleport' }, { ...EVENT, id: 'y', needsRoman: 'yes' }, { ...EVENT, id: 'z', title: '' }, 'junk'],
+  })
+  assert.ok(snap)
+  assert.deepEqual(snap.memory, [FACT])
+  assert.deepEqual(snap.events?.map((e) => e.id), ['curl:test:1'])
+  // The demo feed's shape (no agent fields) is still an event.
+  const demo = { id: 'd', user_id: null, created_at: 'x', updated_at: 'x', deleted_at: null, hlc: null, ts: 1, kind: 'note', title: 'Запис', detail: '', source: 'Crow' }
+  assert.equal(parseSnapshot({ ...SNAPSHOT, events: [demo] })?.events?.length, 1)
+  // Not a list at all is not a snapshot.
+  assert.equal(parseSnapshot({ ...SNAPSHOT, events: 'nope' }), null)
+})

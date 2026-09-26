@@ -2,10 +2,10 @@
 import { getAdapter } from '../data/adapters.js'
 import { liveStatus } from '../data/live-adapter.js'
 import type { MemoryFact, Sourced } from '../data/types.js'
-import type { GatewayErrorKind } from '../hermes/contract.js'
 import { relativeTime } from '../core/dom.js'
 import { count } from '../core/plural.js'
 import { icons } from '../ui/icons.js'
+import { liveNoticeText } from '../ui/live-notice.js'
 import { badge, card, cardHead, dataNotice, empty, row, sourceTag } from '../ui/primitives.js'
 import { registerModule, type ModuleContext } from './registry.js'
 
@@ -35,29 +35,9 @@ function render(root: HTMLElement): void {
 /** What the reader is looking at: fixtures, fresh GBrain, or the last snapshot and why. */
 function notice(memory: Sourced<MemoryFact[]>): string {
   if (memory.origin === 'mock') {
-    return dataNotice('GBrain ще не підключений — це локальні факти, не справжня памʼять системи.')
+    return dataNotice('Демо-режим: це стартові факти на телефоні, не памʼять GBrain. Справжня — у «Наживо».')
   }
-  const status = liveStatus()
-  const age = memory.fetchedAt ? ageLabel(memory.fetchedAt) : ''
-  if (!status.stale) return dataNotice(`Джерело: ${memory.source} · оновлено ${age}`)
-  if (memory.fetchedAt) return dataNotice(`Оновлено ${age} · ${staleReason(status.reason)}`)
-  return dataNotice(`Немає даних · ${staleReason(status.reason)}`)
-}
-
-function ageLabel(ts: number): string {
-  return Date.now() - ts < 60_000 ? 'щойно' : relativeTime(ts, 0)
-}
-
-function staleReason(kind: GatewayErrorKind | null): string {
-  switch (kind) {
-    case 'offline': return 'немає мережі'
-    case 'unauthorized': return 'немає доступу'
-    case 'rate-limited': return 'забагато запитів'
-    case 'bad-response': return 'відповідь gateway не розпізнана'
-    case 'not-configured': return 'адресу gateway не задано'
-    case 'unreachable':
-    default: return 'Mac недоступний'
-  }
+  return dataNotice(liveNoticeText(memory))
 }
 
 function context(): ModuleContext {
@@ -73,7 +53,7 @@ function greeting() {
   const facts = memory.value
   const text = memory.origin === 'live'
     ? `${count(facts.length, 'факт', 'факти', 'фактів')} із GBrain${liveStatus().stale ? ' · дані застарілі' : ''}.`
-    : `${count(facts.length, 'факт', 'факти', 'фактів')} локально. GBrain ще не підключений.`
+    : `${count(facts.length, 'факт', 'факти', 'фактів')} — демо. Памʼять GBrain — у «Наживо».`
   return {
     title: 'Памʼять',
     text,

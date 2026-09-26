@@ -13,7 +13,7 @@
  */
 import { type CrowChip, type CrowReply, type CrowRequest, type HermesGateway, type LiveSnapshot, GatewayError } from './contract.js'
 import { stubGateway } from './stub.js'
-import type { MemoryFact } from '../data/types.js'
+import type { MemoryFact, SystemEvent } from '../data/types.js'
 
 let gateway: HermesGateway = stubGateway
 
@@ -65,6 +65,8 @@ export function safeReply(text: string): string {
 const STATE_PATH = '/api/v1/state'
 const SNAPSHOT_TIMEOUT_MS = 8_000
 const MEMORY_CATEGORIES = new Set(['system', 'project', 'person', 'preference'])
+const EVENT_KINDS = new Set(['deploy', 'index', 'backup', 'agent', 'note', 'agent_started', 'agent_result', 'agent_finished', 'agent_blocked', 'alert'])
+const SEVERITIES = new Set(['info', 'warning', 'critical'])
 
 /**
  * The gateway address as Roman typed it, cleaned, or null if it is not one we
@@ -127,7 +129,31 @@ export function parseSnapshot(body: unknown): LiveSnapshot | null {
     if (!isMemoryFact(row)) return null
     memory.push(row)
   }
-  return { memory, fetchedAt: b.fetchedAt, source: b.source }
+  const snapshot: LiveSnapshot = { memory, fetchedAt: b.fetchedAt, source: b.source }
+  if (b.events !== undefined) {
+    if (!Array.isArray(b.events)) return null
+    // An event this phone cannot render (a kind a newer gateway knows) is left
+    // out rather than taking the whole snapshot — and memory — down with it.
+    snapshot.events = b.events.filter(isSystemEvent)
+  }
+  return snapshot
+}
+
+function isSystemEvent(row: unknown): row is SystemEvent {
+  if (!row || typeof row !== 'object') return false
+  const r = row as Record<string, unknown>
+  const nullableString = (v: unknown) => v === null || typeof v === 'string'
+  const optionalRef = (v: unknown) => v === undefined || nullableString(v)
+  return typeof r.id === 'string' && r.id.length > 0
+    && typeof r.ts === 'number' && Number.isFinite(r.ts)
+    && typeof r.kind === 'string' && EVENT_KINDS.has(r.kind)
+    && typeof r.title === 'string' && r.title.length > 0
+    && typeof r.detail === 'string' && typeof r.source === 'string'
+    && typeof r.created_at === 'string' && typeof r.updated_at === 'string'
+    && nullableString(r.deleted_at) && nullableString(r.user_id) && nullableString(r.hlc)
+    && optionalRef(r.agentId) && optionalRef(r.taskId) && optionalRef(r.projectId)
+    && (r.severity === undefined || (typeof r.severity === 'string' && SEVERITIES.has(r.severity)))
+    && (r.needsRoman === undefined || typeof r.needsRoman === 'boolean')
 }
 
 function isMemoryFact(row: unknown): row is MemoryFact {

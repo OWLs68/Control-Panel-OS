@@ -9,8 +9,8 @@
 import { relativeTime } from '../core/dom.js'
 import { count, plural } from '../core/plural.js'
 import { reg } from '../core/delegation.js'
-import { getAdapter } from '../data/adapters.js'
-import type { Attention, Severity } from '../data/types.js'
+import { attentionIsDemoInLive, getAdapter, type DataAdapter } from '../data/adapters.js'
+import type { Attention, Origin, Severity } from '../data/types.js'
 import { getGateway } from '../hermes/gateway.js'
 import { icons, type IconName } from '../ui/icons.js'
 import { badge, card, cardHead, dot, empty, metric, row, sourceTag } from '../ui/primitives.js'
@@ -22,6 +22,11 @@ const severityDot = (s: Severity) => (s === 'critical' ? 'error' : s === 'warnin
 
 const DAY = 24 * 3_600_000
 
+/** What is on screen today counts from the same read as the map: a small read would cap the tile. */
+function eventsToday(adapter: DataAdapter): number {
+  return adapter.events(40).value.filter((e) => Date.now() - e.ts < DAY).length
+}
+
 function render(root: HTMLElement): void {
   const adapter = getAdapter()
   const attention = adapter.attention()
@@ -30,27 +35,32 @@ function render(root: HTMLElement): void {
   const events = adapter.events(4)
   // Live or stub is the gateway's word, not the adapter's: the two are switched together.
   const crowLive = getGateway().mode === 'live'
+  const demoAttention = attentionIsDemoInLive(adapter)
 
   const working = agents.value.filter((a) => a.task !== null)
   const activeProjects = projects.value.filter((p) => p.status === 'active')
-  const doneToday = events.value.filter((e) => Date.now() - e.ts < DAY).length
 
   root.innerHTML = `
     <div class="metrics">
-      ${metric(attention.value.length, 'Потребує мене', 'alert', 'error', { action: 'open-module', data: { module: 'projects' } })}
+      ${demoAttention
+        ? metric('—', 'Потребує мене', 'alert', 'error', { action: 'open-module', data: { module: 'work' } })
+        : metric(attention.value.length, 'Потребує мене', 'alert', 'error', { action: 'open-module', data: { module: 'projects' } })}
       ${metric(working.length, 'У роботі', 'play', 'amber', { action: 'open-module', data: { module: 'agents' } })}
       ${metric(activeProjects.length, 'Проєкти', 'projects', 'success', { action: 'open-module', data: { module: 'projects' } })}
-      ${metric(doneToday, 'Сьогодні', 'events', 'info', { action: 'open-module', data: { module: 'events' } })}
+      ${metric(eventsToday(adapter), 'Сьогодні', 'events', 'info', { action: 'open-module', data: { module: 'events' } })}
     </div>
 
     <div class="section-label">Потребує мене</div>
-    ${attention.value.length
-      ? card(
-          cardHead('alert', 'Потребує мене', sourceTag(attention)),
-          attention.value.map(attentionRow).join(''),
-        )
-      : card(cardHead('alert', 'Потребує мене', sourceTag(attention)),
-          empty('check', 'Нічого не чекає', 'Жодне рішення не заблоковане на тобі.'))}
+    ${demoAttention
+      ? card(cardHead('alert', 'Потребує мене'),
+          empty('clock', 'Наживо ще немає даних', 'Живого джерела для цього блоку ще немає. Що чекає на тебе зараз — у «Задачах».'))
+      : attention.value.length
+        ? card(
+            cardHead('alert', 'Потребує мене', sourceTag(attention)),
+            attention.value.map(attentionRow).join(''),
+          )
+        : card(cardHead('alert', 'Потребує мене', sourceTag(attention)),
+            empty('check', 'Нічого не чекає', 'Жодне рішення не заблоковане на тобі.'))}
 
     <div class="section-label">У роботі</div>
     ${card(
@@ -73,7 +83,7 @@ function render(root: HTMLElement): void {
       [
         row({
           title: 'Hermes',
-          sub: crowLive ? 'Crow іде через gateway на Mac до Hermes' : 'Gateway ще не підключений — інтерфейс працює на заглушці',
+          sub: crowLive ? 'Crow іде через gateway на Mac до Hermes' : 'Демо-режим: Crow відповідає із заглушки, Hermes — у «Наживо»',
           lead: dot(crowLive ? 'success' : 'warning'),
           trailing: badge(crowLive ? 'наживо' : 'заглушка', crowLive ? 'success' : 'warning'),
           action: 'ask-crow',
@@ -120,6 +130,8 @@ function attentionRow(a: Attention): string {
 type Edge = 'live' | 'stub' | 'blocked'
 
 interface MapNode {
+  /** Which part of the system the node stands for; two nodes may open the same module. */
+  key: 'agents' | 'projects' | 'events' | 'access' | 'memory'
   x: number; y: number; r: number
   fill: string
   icon: IconName
@@ -137,35 +149,43 @@ interface MapNode {
 
 /**
  * The system map, drawn the way `mockup.html` draws it: the core in the
- * middle, the parts of the OS on a ring around it, and the lines say how they
- * are wired — solid when the connection is live, dashed when it is a stub,
- * red when a blocker sits on it. Positions are the mockup's numbers; only the
- * counts and the line states come from the data. Every node opens its module.
+ * middle, the parts of the system on a ring around it, and the lines say how
+ * they are wired — solid when the read behind the node is live, dashed when it
+ * is demo, red when a blocker sits on it. The line comes from the read's own
+ * origin, never from a guess, so a demo node never draws as a live one.
+ * Positions are the mockup's numbers; only the counts and the line states come
+ * from the data. Every node opens its module.
  */
 function systemMap(): string {
   const adapter = getAdapter()
-  const agents = adapter.agents().value
-  const online = agents.filter((a) => a.status === 'online').length
-  const active = adapter.projects().value.filter((p) => p.status === 'active').length
-  const today = adapter.events(40).value.filter((e) => Date.now() - e.ts < DAY).length
-  const facts = adapter.memory().value.length
-  const critical = adapter.attention().value.filter((a) => a.severity === 'critical').length
+  const agents = adapter.agents()
+  const online = agents.value.filter((a) => a.status === 'online').length
+  const projects = adapter.projects()
+  const active = projects.value.filter((p) => p.status === 'active').length
+  const events = adapter.events(40)
+  const today = eventsToday(adapter)
+  const memory = adapter.memory()
+  const attention = adapter.attention()
+  // Demo blockers next to live data would draw a red line that is not real.
+  const demoAttention = attentionIsDemoInLive(adapter)
+  const critical = demoAttention ? 0 : attention.value.filter((a) => a.severity === 'critical').length
+  const wired = (origin: Origin): Edge => (origin === 'live' ? 'live' : 'stub')
 
   const nodes: MapNode[] = [
-    { x: 95, y: 30, r: 15, fill: 'var(--success)', icon: 'agents', name: 'Агенти',
+    { key: 'agents', x: 95, y: 30, r: 15, fill: 'var(--success)', icon: 'agents', name: 'Агенти',
       sub: count(online, 'активний', 'активні', 'активних'), shift: 0, module: 'agents',
-      edge: online ? 'live' : 'stub', end: [95, 34] },
-    { x: 37, y: 62, r: 14, fill: 'var(--amber)', icon: 'projects', name: 'Проєкти',
-      sub: `${active} у роботі`, shift: -7, module: 'projects', edge: 'live', end: [41, 62] },
-    { x: 153, y: 62, r: 14, fill: 'var(--info)', icon: 'events', name: 'Події',
-      sub: `${today} сьогодні`, shift: 7, module: 'events', edge: 'live', end: [149, 62] },
-    { x: 45, y: 138, r: 14, fill: 'var(--error)', icon: 'lock', name: 'Доступи',
-      sub: critical ? count(critical, 'блокер', 'блокери', 'блокерів') : 'ок',
+      edge: wired(agents.origin), end: [95, 34] },
+    { key: 'projects', x: 37, y: 62, r: 14, fill: 'var(--amber)', icon: 'projects', name: 'Проєкти',
+      sub: `${active} у роботі`, shift: -7, module: 'projects', edge: wired(projects.origin), end: [41, 62] },
+    { key: 'events', x: 153, y: 62, r: 14, fill: 'var(--info)', icon: 'events', name: 'Події',
+      sub: `${today} сьогодні`, shift: 7, module: 'events', edge: wired(events.origin), end: [149, 62] },
+    { key: 'access', x: 45, y: 138, r: 14, fill: 'var(--error)', icon: 'lock', name: 'Доступи',
+      sub: demoAttention ? 'демо' : critical ? count(critical, 'блокер', 'блокери', 'блокерів') : 'ок',
       subTone: critical ? 'var(--error)' : undefined,
-      shift: -7, module: 'projects', edge: critical ? 'blocked' : 'live', end: [49, 134] },
-    { x: 145, y: 138, r: 14, fill: 'var(--secondary)', icon: 'memory', name: 'Памʼять',
-      sub: count(facts, 'факт', 'факти', 'фактів'), shift: 7, module: 'memory',
-      edge: 'stub', end: [141, 134] },   // GBrain is not connected yet
+      shift: -7, module: 'projects', edge: critical ? 'blocked' : wired(attention.origin), end: [49, 134] },
+    { key: 'memory', x: 145, y: 138, r: 14, fill: 'var(--secondary)', icon: 'memory', name: 'Памʼять',
+      sub: count(memory.value.length, 'факт', 'факти', 'фактів'), shift: 7, module: 'memory',
+      edge: wired(memory.origin), end: [141, 134] },
   ]
 
   const line = (n: MapNode) => {
@@ -174,7 +194,7 @@ function systemMap(): string {
       : n.edge === 'stub'
         ? 'stroke:var(--secondary);stroke-width:1.4;stroke-dasharray:2 4'
         : 'stroke:var(--primary);stroke-width:1.6'
-    return `<path d="M95 92 L${n.end[0]} ${n.end[1]}" style="${style}"/>`
+    return `<path class="map-edge" data-node="${n.key}" data-edge="${n.edge}" d="M95 92 L${n.end[0]} ${n.end[1]}" style="${style}"/>`
   }
 
   const node = (n: MapNode) => `
@@ -186,12 +206,12 @@ function systemMap(): string {
     </g>`
 
   return `
-    <svg viewBox="0 0 190 200" role="img" aria-label="Карта системи Roma OS">
+    <svg viewBox="0 0 190 200" role="img" aria-label="Карта системи Crow AI OS">
       <circle cx="95" cy="92" r="62" fill="none" style="stroke:var(--border)" stroke-width="1.2"/>
       ${nodes.map(line).join('')}
-      <g class="map-node map-core" data-action="ask-crow" data-text="Як справи в системі?" role="button" tabindex="0" aria-label="Roma OS">
+      <g class="map-node map-core" data-action="ask-crow" data-text="Як справи в системі?" role="button" tabindex="0" aria-label="Crow AI OS">
         <circle cx="95" cy="92" r="27" style="fill:var(--primary)"/>
-        <text x="95" y="89" text-anchor="middle" font-size="11" font-weight="800" style="fill:var(--surface)">Roma</text>
+        <text x="95" y="89" text-anchor="middle" font-size="11" font-weight="800" style="fill:var(--surface)">Crow</text>
         <text x="95" y="100" text-anchor="middle" font-size="11" font-weight="800" style="fill:var(--amber)">OS</text>
       </g>
       ${nodes.map(node).join('')}
@@ -202,20 +222,36 @@ function systemMap(): string {
 
 function context(): ModuleContext {
   const adapter = getAdapter()
-  const attention = adapter.attention().value
-  const working = adapter.agents().value.filter((a) => a.task !== null)
+  const agents = adapter.agents()
+  const working = agents.value.filter((a) => a.task !== null)
+  const demo = (origin: Origin) => (adapter.origin === 'live' && origin !== 'live' ? ' (демо)' : '')
+  // Live Hermes is never handed the demo fixtures as if they were real work waiting on Roman.
+  const attention = attentionIsDemoInLive(adapter) ? null : adapter.attention().value
   return {
     activeScreen: 'control',
     visibleState: [
-      `${count(attention.length, 'річ потребує', 'речі потребують', 'речей потребує')} Романа`,
-      `${count(working.length, 'агент', 'агенти', 'агентів')} у роботі`,
-      getGateway().mode === 'live' ? 'Hermes: наживо, Crow іде через gateway' : 'Hermes: заглушка, реального gateway немає',
+      attention
+        ? `${count(attention.length, 'річ потребує', 'речі потребують', 'речей потребує')} Романа`
+        : '«Потребує мене»: живих даних ще немає',
+      `${count(working.length, 'агент', 'агенти', 'агентів')} у роботі${demo(agents.origin)}`,
+      getGateway().mode === 'live' ? 'Hermes: наживо, Crow іде через gateway' : 'Hermes: демо-режим, відповідає заглушка',
     ],
-    blockers: attention.map((a) => `${a.title} (${a.risk}): ${a.detail}`),
+    blockers: attention ? attention.map((a) => `${a.title} (${a.risk}): ${a.detail}`) : [],
   }
 }
 
 function greeting() {
+  if (attentionIsDemoInLive()) {
+    return {
+      title: 'Привіт!',
+      text: '«Потребує мене» наживо ще не підʼєднане. Що чекає на тебе зараз — у «Задачах».',
+      priority: 'normal' as const,
+      chips: [
+        { id: 'control-tasks', label: 'Відкрий задачі', action: 'nav' as const, target: 'work', tone: 'accent' as const },
+        { id: 'control-agents', label: 'Що роблять агенти?', action: 'chat' as const },
+      ],
+    }
+  }
   const attention = getAdapter().attention().value
   const worst = attention[0]
   return {

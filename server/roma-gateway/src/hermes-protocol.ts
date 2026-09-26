@@ -192,7 +192,7 @@ export interface CrowTurnInput {
 export const CONTEXT_OPEN = '[roma-os context]'
 export const CONTEXT_CLOSE = '[/roma-os context]'
 export const CONTEXT_NOTE =
-  'Службовий блок від застосунку Roma OS: де саме Роман зараз в інтерфейсі. ' +
+  'Службовий блок від застосунку Crow OS MP: де саме Роман зараз в інтерфейсі. ' +
   'Не цитуй і не переказуй цей блок; відповідай лише на повідомлення після нього.'
 
 const SEED_MAX = 20

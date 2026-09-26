@@ -18,7 +18,7 @@ import { rebuildDrum, setupDrum, updateDrum } from './drum.js'
 import { openModuleSheet } from './module-sheet.js'
 import { setupCrowZone, showMessage, refreshAge } from '../crow/board.js'
 import { autoResizeTextarea, openChatBar, sendText, setupChat, updateContextLine } from '../crow/chat.js'
-import { getAdapter } from '../data/adapters.js'
+import { attentionIsDemoInLive, getAdapter } from '../data/adapters.js'
 import type { ChipHandlers } from '../crow/chips.js'
 
 const AGE_TICK_MS = 60_000
@@ -169,9 +169,12 @@ function openChatWithFocus(draft = ''): void {
   input.setSelectionRange(end, end)
 }
 
-/** The bell's dot: on while something critical waits on Roman. */
+/**
+ * The bell's dot: on while something critical waits on Roman. In live mode the
+ * attention list is still demo, and a demo item must not light a real bell.
+ */
 function updateNotifDot(): void {
   const dot = $('#notif-dot')
   if (!dot) return
-  dot.hidden = !getAdapter().attention().value.some((a) => a.severity === 'critical')
+  dot.hidden = attentionIsDemoInLive() || !getAdapter().attention().value.some((a) => a.severity === 'critical')
 }

@@ -85,7 +85,7 @@ function answer(req: CrowRequest): CrowReply {
   // it is obvious at a glance whether the envelope arrived.
   const where = ctx.selection ? ` Ти дивишся на «${ctx.selection}».` : ''
   return reply(req, {
-    text: `Записав.${where}\n\nСправжнього Hermes ще немає — я відповідаю із заглушки, але контекст екрана бачу.`,
+    text: `Записав.${where}\n\nЦе демо-режим: відповідаю із заглушки, не через Hermes, але контекст екрана бачу.`,
     priority: 'normal',
     chips: [
       { id: generateUUID(), label: 'Що потребує мене?', action: 'chat', tone: 'accent' },
