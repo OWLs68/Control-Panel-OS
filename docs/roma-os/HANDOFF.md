@@ -25,26 +25,24 @@
 - **branch:** `claude/fervent-johnson-xgrk8r`
 - **start_head:** `05a72d3`
 - **start_main:** `05a72d3`
-- **work_end_head:** `858466b`
+- **work_end_head:** `1962ba7`
 
-**Де зупинились.** Перший зріз «Задач» (сесія `xkbygw`) і документи Batch 3
-(`73e4dad`) — у `main` merge-комітом `e1684e5`: CI 88 ✅, deploy 33 ✅, живий
-URL на `e1684e5`. Потім у гілці — Project Sync (`f589462`, `1d8dec0`,
-`858466b`): Drive-тека `Claude Sync`, правило й формат snapshot у `CLAUDE.md`
-(«Правила», перший пункт), крок 6 `/finish`, PostToolUse hook
-`.claude/hooks/after-merge-sync.mjs` — snapshot лише коли merge оновлює
-`main`. Гілку запушено; у `main` Project Sync ще немає.
+**Де зупинились.** «Задачі» — у `main` з `e1684e5`. Project Sync — у `main`
+з `c9903c0` (24.09): Drive-тека `Claude Sync`, правило й формат snapshot у
+`CLAUDE.md`, крок 6 `/finish`, PostToolUse hook (спрацював наживо на цьому
+merge), час snapshot — `Europe/Amsterdam`. CI 92 ✅, deploy 34 ✅ (smoke,
+`v34`), живий URL https://owls68.github.io/Control-Panel-OS/. Поза цим
+repo: private `OWLs68/Crow-Agents` (`f2c0e29`) — фундамент specialist
+agents; Shopping Scout не почато.
 
 **Blockers.** Немає.
 
-**Наступний крок.** «merge» Project Sync у `main` — лише за словом; hook діє
-в сесіях, чия гілка його містить. Далі — «Задачі» на iPhone за
-`STAGE-1.md §6.6` на живому URL.
+**Наступний крок.** «Задачі» на iPhone за `STAGE-1.md §6.6` на живому URL.
 
 **Чекає рішення Романа.**
-1. «merge» гілки з Project Sync у `main`
-2. Перевірка «Задач» на iPhone за `STAGE-1.md §6.6`
-3. Envelope «Задач» без вибору несе до пʼяти назв «потребує Романа» (`GATEWAY.md §6`) — лишити чи обмежити
+1. Перевірка «Задач» на iPhone за `STAGE-1.md §6.6`
+2. Envelope «Задач» без вибору несе до пʼяти назв «потребує Романа» (`GATEWAY.md §6`) — лишити чи обмежити
+3. Shopping Scout у `Crow-Agents` — окремим рішенням
 4. Далі за backlog: види задач у Проєктах/Агентах; Control «Потребує мене»; редагування й видалення; якість відповідей Crow
 
 ---

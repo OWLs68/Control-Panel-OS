@@ -45,6 +45,28 @@
 Branch `claude/fervent-johnson-xgrk8r` · Start `05a72d3` · Work end `858466b`
 · verify ✅ · e2e ✅ 74/74 (перед merge) · CI 88 ✅ `main` · deploy 33 ✅
 
+### Доповнення 26.09 11:56
+
+- Зроблено: `1962ba7` — час Project Sync (імʼя і `timestamp`) у поясі
+  `Europe/Amsterdam`, DST сам (`CLAUDE.md`, `/finish` крок 6). Merge у
+  `main` — `c9903c0` (verify ✅ 44 unit, e2e ✅ 74/74); CI 92 ✅, deploy 34 ✅.
+  Hook уперше спрацював наживо; `merge`-snapshot
+  `2026-09-24_170459_merge_1962ba7.md` у `Claude Sync`; перший
+  `finish`-snapshot — `2026-09-24_144827_finish_54bad11.md` (ще в UTC).
+- Зроблено: поза цим repo — private `OWLs68/Crow-Agents`, коміт `f2c0e29`
+  (README, `.gitignore`, `agents/`), push ✅. Створити repo з сесії не
+  вийшло (GitHub 403 для інтеграції) — Роман створив порожнє, Claude запушив.
+- Рішення Романа: час Project Sync — `Europe/Amsterdam`; `Crow-Agents` —
+  спільний repo specialist agents, агенти працюють через Crow/Hermes, Crow OS
+  MP лише показує; перший запланований — Shopping Scout; без Agent Factory,
+  registry, SDK і manager hierarchy.
+- Інциденти: Без інцидентів.
+- Відкрито / далі: iPhone — `STAGE-1.md §6.6`; envelope «Задач»; Shopping
+  Scout — окремим рішенням.
+
+Branch `claude/fervent-johnson-xgrk8r` · Work end `1962ba7` · verify ✅ ·
+e2e ✅ 74/74 · CI 92 ✅ `main` · deploy 34 ✅
+
 ---
 
 ## 2026-09-21 — 20260921-1738-xkbygw — приймання зрізу 2 на Mac та iPhone, синхронізація документів
