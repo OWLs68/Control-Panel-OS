@@ -431,6 +431,9 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
   font-size: var(--fs-sm); color: var(--text-2); line-height: 1.35;
   white-space: pre-line;   /* subtitles carry real line breaks */
 }
+/* Two badges on one row (an event that waits on Roman): stacked, so the title
+   keeps its width instead of wrapping word by word beside them. */
+.card-row-tags { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
 /* «Задачі»: a finished task is dimmed and struck through, as in NeverMind's
    task list (DESIGN_SYSTEM «Картка задачі»: done — opacity 0.5, line-through). */
 .card-row.is-done { opacity: 0.5; }

@@ -167,7 +167,7 @@ function sourceRow(): string {
   return row({
     id: 'settings-source-row', icon: icons.cube, tone: live ? 'amber' : 'ink',
     title: 'Джерело даних',
-    sub: live ? 'Памʼять з GBrain і Crow через Hermes — через gateway на Mac; решта поки демо' : 'Стартовий набір, локально',
+    sub: live ? 'Памʼять з GBrain, Crow через Hermes і події — через gateway на Mac; решта поки демо' : 'Стартовий набір, локально',
     right: `<span class="s-pill-group">${pill('demo', 'Демо', !live)}${pill('live', 'Наживо', live)}</span>`,
   })
 }

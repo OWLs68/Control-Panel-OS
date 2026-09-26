@@ -24,9 +24,18 @@ const fact = (id: string, text: string, category = 'preference') => ({
 const FACT_78 = fact('78', 'Runtime canonical source перемагає старіший STATE.')
 const FACT_79 = fact('79', 'Salient writeback працює через client-side routing.', 'system')
 
-function snapshot(memory: unknown[]) {
-  return { memory, fetchedAt: Date.now(), source: 'gbrain:recall' }
+function snapshot(memory: unknown[], events?: unknown[]) {
+  return { memory, fetchedAt: Date.now(), source: 'gbrain:recall', ...(events ? { events } : {}) }
 }
+
+/** An event as the Event Center stamps it (server/roma-gateway/src/events.ts). */
+const liveEvent = (id: string, over: Record<string, unknown> = {}) => ({
+  id, user_id: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+  deleted_at: null, hlc: null, ts: Date.now() - 60_000, kind: 'agent_result', title: `Подія ${id}`, detail: '',
+  source: 'curl', agentId: null, taskId: null, projectId: null, severity: 'info', needsRoman: false, ...over,
+})
+const EV_ALERT = liveEvent('curl:test:1', { kind: 'alert', title: 'Тест з Mac', needsRoman: true, severity: 'warning', ts: Date.now() - 30_000 })
+const EV_DONE = liveEvent('curl:test:2', { kind: 'agent_finished', title: 'Скан завершено', detail: '2 товари, 0 знижок', source: 'shopping-scout' })
 
 async function serveJson(route: Route, status: number, body: unknown): Promise<void> {
   await route.fulfill({
@@ -223,4 +232,82 @@ test.describe('with the service worker in control', () => {
     await page.unroute(`${GW}/**`)
     await refreshShowsSecondFact(page)
   })
+})
+
+test('live events: the Event Center feed on «Події» and on Control, marked live, what waits on Roman flagged', async ({ page }) => {
+  await page.route(`${GW}/**`, (route) => serveJson(route, 200, snapshot([FACT_78], [EV_DONE, EV_ALERT])))
+  await bootLive(page)
+  await ready(page)
+
+  // Control counts the live events and draws their line solid.
+  const control = page.locator('#screen-control')
+  await expect(control.locator('.metric').nth(3).locator('.metric-num')).toHaveText('2')
+  await expect(control.locator('.map-edge[data-node="events"]')).toHaveAttribute('data-edge', 'live')
+  await expect(control.getByText('Тест з Mac')).toBeVisible()
+
+  await gotoModule(page, 'events')
+  const screen = page.locator('#screen-events')
+  await expect(screen.locator('.source-tag')).toHaveAttribute('data-origin', 'live')
+  await expect(screen.locator('.source-tag')).toHaveAttribute('title', 'gateway:events')
+  // Newest first; the demo feed is gone.
+  await expect(screen.locator('.card-row-title')).toHaveText(['Тест з Mac', 'Скан завершено'])
+  await expect(screen.getByText('Roma OS: етап 0 завершено')).toHaveCount(0)
+  const alert = screen.locator('.card-row', { hasText: 'Тест з Mac' })
+  await expect(alert.locator('.badge')).toHaveText(['потребує мене', 'важливо'])
+  await expect(alert.locator('.dot-warning')).toHaveCount(1)
+  await expect(screen.locator('.card-row', { hasText: 'Скан завершено' })).toContainText('2 товари, 0 знижок')
+  await expect(screen.locator('.data-notice')).toContainText('Джерело: gateway:events · оновлено щойно')
+  await expect(page.locator('#crow-text')).toContainText('1 подія чекає на тебе')
+
+  // The phone keeps the events with the snapshot — and nothing else.
+  const cached = await page.evaluate(() => JSON.parse(localStorage.getItem('roma_live_snapshot') ?? 'null'))
+  expect(Object.keys(cached).sort()).toEqual(['events', 'fetchedAt', 'memory', 'source'])
+})
+
+test('a gateway without the Event Center leaves the feed on demo, and says why', async ({ page }) => {
+  await page.route(`${GW}/**`, (route) => serveJson(route, 200, snapshot([FACT_78])))
+  await bootLive(page)
+  await ready(page)
+  await gotoModule(page, 'events')
+  const screen = page.locator('#screen-events')
+  await expect(screen.locator('.source-tag')).toHaveAttribute('data-origin', 'mock')
+  await expect(screen.locator('.data-notice')).toContainText('Живих подій ще немає: Event Center на Mac не ввімкнений')
+  await expect(page.locator('#screen-control .map-edge[data-node="events"]')).toHaveAttribute('data-edge', 'stub')
+})
+
+test('when the Mac is gone the last events stay, with their age and the reason', async ({ page }) => {
+  await page.route(`${GW}/**`, (route) => serveJson(route, 200, snapshot([FACT_78], [EV_ALERT])))
+  await bootLive(page)
+  await ready(page)
+  await gotoModule(page, 'events')
+  await expect(page.locator('#screen-events').getByText('Тест з Mac')).toBeVisible()
+
+  await page.unroute(`${GW}/**`)
+  await page.route(`${GW}/**`, (route) => route.abort('failed'))
+  await page.reload()
+  await expect(page.locator('body')).toHaveAttribute('data-ready', '1')
+  await gotoModule(page, 'events')
+  const screen = page.locator('#screen-events')
+  await expect(screen.getByText('Тест з Mac')).toBeVisible()
+  await expect(screen.locator('.source-tag')).toHaveAttribute('data-origin', 'live')
+  await expect(screen.locator('.data-notice')).toContainText('Оновлено щойно · Mac недоступний')
+})
+
+test('an empty live feed is live and empty, not demo', async ({ page }) => {
+  await page.route(`${GW}/**`, (route) => serveJson(route, 200, snapshot([FACT_78], [])))
+  await bootLive(page)
+  await ready(page)
+  await gotoModule(page, 'events')
+  const screen = page.locator('#screen-events')
+  await expect(screen.locator('.source-tag')).toHaveAttribute('data-origin', 'live')
+  await expect(screen.getByText('Жоден агент ще нічого не повідомив.')).toBeVisible()
+})
+
+test('demo mode: the demo feed, and it says it is demo', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.locator('body')).toHaveAttribute('data-ready', '1')
+  await gotoModule(page, 'events')
+  const screen = page.locator('#screen-events')
+  await expect(screen.locator('.source-tag')).toHaveAttribute('data-origin', 'mock')
+  await expect(screen.locator('.data-notice')).toContainText('Демо-режим')
 })

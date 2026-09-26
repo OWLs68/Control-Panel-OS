@@ -46,15 +46,21 @@ WebPush (Product Spec §7).
 
 **Blockers.** Немає.
 
-**Наступний крок.** Real Events pipeline, перший зріз: `curl` →
-`POST /api/v1/events` → сховище подій біля gateway → `GET /api/v1/state` →
-екран «Події» і Control. Без WebPush, без Scout як producer.
+**Наступний крок.** Real Events pipeline, перший зріз, зроблений у гілці
+`claude/new-session-51tdj4` (локальні коміти, 26.09, **не запушено**): `curl` →
+`POST /api/v1/events` → Event Center біля gateway → `GET /api/v1/state` →
+«Події» і Control (`GATEWAY.md §5.1`). Разом із ним — прибраний drift: видимі
+назви Crow OS MP, чесні тексти демо-режиму, у «Наживо» немає демо-«Потребує
+мене», карта системи за реальним станом. Далі: «push» і «merge» — лише за
+словом; кроки на Mac (`GATEWAY.md §9.7`); приймання на iPhone
+(`STAGE-1.md §6.7`). Без WebPush, без Scout як producer.
 
 **Чекає рішення Романа.**
 1. Перевірка «Задач» на iPhone за `STAGE-1.md §6.6`
 2. Envelope «Задач» без вибору несе до пʼяти назв «потребує Романа» (`GATEWAY.md §6`) — лишити чи обмежити
-3. Shopping Scout як перший producer подій — після PASS зрізу Events, окремим рішенням
-4. Далі за backlog: види задач у Проєктах/Агентах; Control «Потребує мене» з реальних даних; редагування й видалення; якість відповідей Crow
+3. «push» і «merge» зрізу Events, потім кроки на Mac (`GATEWAY.md §9.7`) і приймання `STAGE-1.md §6.7`
+4. Shopping Scout як перший producer подій — після PASS зрізу Events, окремим рішенням
+5. Далі за backlog: види задач у Проєктах/Агентах; Control «Потребує мене» з реальних даних (задачі + події); notification policy → WebPush; редагування й видалення; якість відповідей Crow
 
 ---
 

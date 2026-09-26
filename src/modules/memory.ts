@@ -2,10 +2,10 @@
 import { getAdapter } from '../data/adapters.js'
 import { liveStatus } from '../data/live-adapter.js'
 import type { MemoryFact, Sourced } from '../data/types.js'
-import type { GatewayErrorKind } from '../hermes/contract.js'
 import { relativeTime } from '../core/dom.js'
 import { count } from '../core/plural.js'
 import { icons } from '../ui/icons.js'
+import { liveNoticeText } from '../ui/live-notice.js'
 import { badge, card, cardHead, dataNotice, empty, row, sourceTag } from '../ui/primitives.js'
 import { registerModule, type ModuleContext } from './registry.js'
 
@@ -37,27 +37,7 @@ function notice(memory: Sourced<MemoryFact[]>): string {
   if (memory.origin === 'mock') {
     return dataNotice('Демо-режим: це стартові факти на телефоні, не памʼять GBrain. Справжня — у «Наживо».')
   }
-  const status = liveStatus()
-  const age = memory.fetchedAt ? ageLabel(memory.fetchedAt) : ''
-  if (!status.stale) return dataNotice(`Джерело: ${memory.source} · оновлено ${age}`)
-  if (memory.fetchedAt) return dataNotice(`Оновлено ${age} · ${staleReason(status.reason)}`)
-  return dataNotice(`Немає даних · ${staleReason(status.reason)}`)
-}
-
-function ageLabel(ts: number): string {
-  return Date.now() - ts < 60_000 ? 'щойно' : relativeTime(ts, 0)
-}
-
-function staleReason(kind: GatewayErrorKind | null): string {
-  switch (kind) {
-    case 'offline': return 'немає мережі'
-    case 'unauthorized': return 'немає доступу'
-    case 'rate-limited': return 'забагато запитів'
-    case 'bad-response': return 'відповідь gateway не розпізнана'
-    case 'not-configured': return 'адресу gateway не задано'
-    case 'unreachable':
-    default: return 'Mac недоступний'
-  }
+  return dataNotice(liveNoticeText(memory))
 }
 
 function context(): ModuleContext {

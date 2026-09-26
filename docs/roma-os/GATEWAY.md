@@ -1,12 +1,15 @@
-# Roma gateway (`server/roma-gateway`) — як Crow OS MP читає GBrain і говорить з Hermes
+# Roma gateway (`server/roma-gateway`) — як Crow OS MP читає GBrain, говорить з Hermes і веде стрічку подій
 
-Два вертикальні зрізи живих даних через один сервіс на Mac:
+Три вертикальні зрізи живих даних через один сервіс на Mac:
 
 - **зріз 1 (21.09):** Памʼять із GBrain, лише читання;
 - **зріз 2 (21.09, сесія dmm98t):** Crow через Hermes — одна чиста відповідь
-  на кожне повідомлення.
+  на кожне повідомлення;
+- **зріз 3 (26.09, сесія 51tdj4):** Event Center — справжні події від
+  producer'ів на Mac (агенти, Crow/Hermes, поки що `curl`) у стрічці «Події»
+  і на Control (§5.1).
 
-Усе інше на екранах — поки демо, і позначене як демо.
+Агенти, Проєкти, Блокери і «Потребує мене» — поки демо, і позначені як демо.
 
 ---
 
@@ -26,6 +29,9 @@ Tailscale Serve на Mac  ──додає заголовок Tailscale-User-Log
                                                                                        │
                                                                                        ▼
                                                                           DeepSeek → mcp__gbrain__recall → відповідь
+
+producer на тому ж Mac (curl; згодом агенти) ──POST /api/v1/events, Bearer token──▶ 127.0.0.1:8787
+                                                              (не через Serve)          └─▶ ~/.roma-gateway/events.json (§5.1)
 ```
 
 - **GBrain з боку gateway — лише локально.** Gateway читає його на тому ж Mac.
@@ -60,10 +66,20 @@ LaunchAgents; Hermes — Docker-контейнер з `restart unless-stopped`, 
 | Allowlist логінів Tailscale | `.env` (`ROMA_ALLOWED_LOGINS`) | репозиторій |
 | Дозволені origin'и PWA | `.env` (`ROMA_ALLOWED_ORIGINS`), точні, не `*` | — |
 | Адреса gateway | localStorage `roma_gateway_url` | — |
+| Token producer'ів подій | файл (типово `~/.roma-gateway/events-token`), mode 600; у `.env` — **лише шлях** (`ROMA_EVENTS_TOKEN_FILE`) | `.env.example`, логи, відповіді, телефон, git |
+| Файл подій | `ROMA_EVENTS_FILE` (типово `~/.roma-gateway/events.json`) поза репо, mode 600 | репозиторій |
 
 Ідентичність — це заголовок `Tailscale-User-Login`, який Serve додає до
 кожного запиту зсередини tailnet. Без заголовка або з чужим логіном — `403`,
 і для `/state`, і для `/crow`. Порожній allowlist = нікого не пускати.
+
+`POST /api/v1/events` — навпаки: лише для producer'ів **на самому Mac**.
+Запит із заголовком `Tailscale-User-Login` (тобто той, що прийшов через Serve
+з телефона чи tailnet) — `403`, навіть із правильним token. Пускає тільки
+`Authorization: Bearer <token>`: token читається з файла при кожному записі
+(ротація без перезапуску) і порівнюється за сталий час. Телефон подій не
+пише ніколи; CORS заголовка `Authorization` не дозволяє, тож браузер не
+зміг би й спробувати.
 
 Gateway читає token Hermes із файлу при кожному підключенні (ротація без
 перезапуску), попереджає раз, якщо файл читають інші, і **ніколи** не пише
@@ -78,8 +94,9 @@ GBrain: **один** інструмент — `recall` без `query`, з `limit
 | Метод, шлях | Ідентичність | Відповідь |
 |---|---|---|
 | `GET /api/v1/health` | не потрібна | `{ ok, version }` — без даних |
-| `GET /api/v1/state` | потрібна | `{ memory: MemoryFact[], fetchedAt, source: "gbrain:recall", dropped }` |
+| `GET /api/v1/state` | потрібна | `{ memory: MemoryFact[], fetchedAt, source: "gbrain:recall", dropped, events? }` — `events` (50 найновіших `SystemEvent`) лише коли Event Center увімкнений |
 | `POST /api/v1/crow` | потрібна | `CrowReply` — `{ requestId, text, chips: [], priority: "normal" }` |
+| `POST /api/v1/events` | **не через Serve** + producer token | `201 { id, duplicate: false }` або `200 { id, duplicate: true }` (§5.1) |
 | `OPTIONS *` | — | preflight для дозволеного origin (`POST` з JSON його потребує) |
 
 `POST /api/v1/crow` бере `CrowRequest` з `src/hermes/contract.ts` як є:
@@ -240,13 +257,81 @@ gateway відповідає `-32601`, і агент одразу отримує
 префіксів (`roman-ai-os`), тож сьогодні такі факти потрапляють у `system`;
 правило застосоване буквально, без здогадок.
 
+## 5.1. Event Center — справжні події (зріз 3)
+
+Значуща діяльність Crow/Hermes і агентів спершу стає структурованою подією;
+«Події» — її історія. Порядок (Product Spec §7): real Events pipeline →
+notification policy → WebPush. Push — шар доставки поверх, не сховище, і в
+цьому зрізі його немає.
+
+```
+producer на Mac ──POST /api/v1/events──▶ Roma gateway ──▶ ~/.roma-gateway/events.json
+                                            │
+iPhone ◀── GET /api/v1/state (events) ◀─────┘  → live-adapter → «Події», Control
+```
+
+**Чому біля gateway, а не в GBrain timeline.** Події — операційний потік, а
+не довга памʼять (Core Rules §7). `add_timeline_entry` GBrain приймає лише
+дату без часу і не має полів виду, агента чи `needsRoman`. Сам Shopping Scout
+теж тримає свій стан у власній SQLite, а не в GBrain.
+
+**Контракт (що шле producer).** Тіло до 16 КБ:
+
+```json
+{
+  "id": "shopping-scout:deal:42",
+  "kind": "agent_started | agent_result | agent_finished | agent_blocked | alert",
+  "title": "Old Amsterdam −35% у Dirk Almere",
+  "detail": "2,49 € замість 3,85 €, до неділі",
+  "source": "shopping-scout",
+  "agentId": "shopping-scout", "taskId": null, "projectId": null,
+  "severity": "info | warning | critical",
+  "needsRoman": true,
+  "ts": "2026-09-26T12:40:00+02:00"
+}
+```
+
+- Обовʼязкові: `kind`, `title` (до 140, один рядок), `source` (до 60).
+- `id` — ключ повтору, який обирає producer (`[A-Za-z0-9._:-]`, до 128):
+  той самий `id` удруге нічого не змінює (`200`, `duplicate: true`) — retry
+  після таймауту безпечний. Без `id` gateway ставить UUID.
+- `needsRoman` — **прапорець поверх виду**, як у задачі, не окремий вид:
+  «агент чекає рішення» = `agent_blocked` або `agent_result` з `needsRoman: true`.
+- `severity` типово `info`; `detail` до 1000; `ts` — мс або ISO з offset,
+  типово час прийому; більш ніж на 5 хв у майбутньому — відмова.
+- Gateway додає конверт сутності (`created_at` = час прийому, `user_id`,
+  `hlc`, `deleted_at` — `null`) і зберігає повний `SystemEvent`
+  (`src/data/types.ts`) — той самий контракт, що в демо-стрічці.
+
+**Відповіді.** `201` нова · `200` повтор · `400 { error: "invalid_event", field }`
+(поле названо) або `bad_request` (не JSON) · `401 unauthorized` (немає чи не
+той token) · `403 forbidden` (через Serve) · `405` (не `POST`) · `413` (понад
+16 КБ) · `501 not_implemented` (Event Center вимкнений) · `503
+events_unavailable` (файл token не читається) · `500 store_failed`.
+
+**Сховище.** Один JSON-файл, 500 найновіших, атомарний запис (tmp + rename),
+записи по черзі (два producer'и водночас не затирають один одного);
+пошкоджений файл відкладається як `events.json.corrupt-<ts>`, а не
+перезаписується. У знімок `/state` — 50 найновіших, читаються щоразу, поза
+10-секундним кешем Памʼяті.
+
+**Вимкнено.** Без `ROMA_EVENTS_TOKEN_FILE` Event Center вимкнений: `POST` —
+`501`, у знімку немає ключа `events`, і телефон показує демо-стрічку з
+рядком «Живих подій ще немає: Event Center на Mac не ввімкнений».
+
+**Відоме обмеження.** Якщо GBrain лежить, `/state` відповідає `502`, і
+події теж стають застарілими — до наступного вдалого оновлення. Найчастіша
+причина (Mac спить) і так вимикає обидва.
+
 ## 6. Що зберігає телефон
 
 - `roma_data_source` — `demo | live`
 - `roma_gateway_url` — адреса gateway
 - `roma_live_snapshot` — **лише** нормалізований знімок: `MemoryFact[]`,
-  `fetchedAt`, `source`; один, останній; замінюється при кожному успіху;
-  видаляється при перемиканні на «Демо»
+  події (`SystemEvent[]`, якщо Event Center увімкнений), `fetchedAt`,
+  `source`; один, останній; замінюється при кожному успіху; видаляється при
+  перемиканні на «Демо». Подію, яку телефон не вміє показати (вид, якого він
+  ще не знає), він пропускає, а не відкидає весь знімок
 - `roma_chat` — історія чату Crow, як і раніше (30 ходів; це те, що
   сідиться в нову сесію Hermes)
 - `roma_tasks` — задачі Романа («Задачі», перший зріз). Живуть **лише** на
@@ -265,14 +350,16 @@ gateway відповідає `-32601`, і агент одразу отримує
 - `HERMES_SESSION_STATE_FILE` (типово `~/.roma-gateway/hermes-session.json`):
   `{ "stored_session_id", "saved_at" }`. Видалити цей файл = почати нову
   сесію Hermes з наступного повідомлення (і засіяти її історією з телефона).
+- `ROMA_EVENTS_FILE` (типово `~/.roma-gateway/events.json`): події Event
+  Center, 500 найновіших (§5.1). Видалити файл = почати стрічку з нуля.
 - Нічого більше: ні транскриптів, ні токенів, ні кешу відповідей. Кеш знімка
   Памʼяті — 10 с у памʼяті процесу.
 
 ## 8. Коли Mac спить або недосяжний
 
-Оновлення Памʼяті не відбувається, Crow не відповідає. Памʼять показує
-останній знімок із міткою «наживо» і рядком **«Оновлено N хв тому · Mac
-недоступний»**. На демо застосунок мовчки не переходить. Причини словами:
+Оновлення Памʼяті й подій не відбувається, Crow не відповідає. Памʼять і
+Події показують останній знімок із міткою «наживо» і рядком **«Оновлено N хв
+тому · Mac недоступний»**. На демо застосунок мовчки не переходить. Причини словами:
 
 | Помилка | Памʼять | Crow (у чаті) |
 |---|---|---|
@@ -296,6 +383,7 @@ gateway відповідає `-32601`, і агент одразу отримує
    `ROMA_ALLOWED_LOGINS` (твій логін Tailscale), `GBRAIN_MCP_URL`,
    `GBRAIN_TOKEN` (див. §10), `HERMES_TOKEN_FILE` (шлях до файлу з токеном,
    значення в `.env` **не** класти). Решта `HERMES_*` мають дефолти.
+   Для подій — `ROMA_EVENTS_TOKEN_FILE` і файл token (крок 7).
 3. Hermes має бути запущений у server mode на `127.0.0.1:9119` (на Mac
    Романа — Docker-контейнер, §1).
 4. Запуск:
@@ -304,8 +392,9 @@ gateway відповідає `-32601`, і агент одразу отримує
    npm run start --workspace server/roma-gateway
    ```
 
-   У логах: `listening on http://127.0.0.1:8787 … · crow via Hermes` і рядок
-   `hermes: ws://127.0.0.1:9119/api/ws · token file … · session state …`.
+   У логах: `listening on http://127.0.0.1:8787 … · crow via Hermes · events on`
+   і рядки `hermes: ws://127.0.0.1:9119/api/ws · token file … · session state …`,
+   `events: store … · token file …`.
    Перезапуск — `Ctrl-C` (SIGINT закриває сокет, сесія Hermes лишається) і
    та сама команда знову.
 
@@ -322,7 +411,37 @@ gateway відповідає `-32601`, і агент одразу отримує
    Очікувано: `{"requestId":"curl-1","text":"…VIOLET-624…","chips":[],"priority":"normal"}`.
    Друга така сама команда під час першої — `{"error":"busy"}` зі статусом 409.
 
-6. Тести без Hermes і без GBrain (фейки): `npm run verify --workspace server/roma-gateway` — lint, типи, 63 тести.
+6. Тести без Hermes і без GBrain (фейки): `npm run verify --workspace server/roma-gateway` — lint, типи, 83 тести.
+
+7. Event Center (зріз 3), один раз на Mac:
+
+   ```bash
+   mkdir -p ~/.roma-gateway && chmod 700 ~/.roma-gateway
+   (umask 077 && openssl rand -hex 32 > ~/.roma-gateway/events-token)   # одразу 600, значення ніде не друкується
+   ```
+
+   У `server/roma-gateway/.env` дописати (лише шляхи):
+
+   ```bash
+   ROMA_EVENTS_TOKEN_FILE=~/.roma-gateway/events-token
+   ROMA_EVENTS_FILE=~/.roma-gateway/events.json
+   ```
+
+   Перезапустити gateway. `curl http://127.0.0.1:8787/api/v1/health` →
+   `"version":"0.3.0"`. Тестова подія:
+
+   ```bash
+   curl -s -X POST http://127.0.0.1:8787/api/v1/events \
+     -H "Authorization: Bearer $(cat ~/.roma-gateway/events-token)" \
+     -H 'Content-Type: application/json' \
+     -d '{"id":"curl:test:1","kind":"alert","title":"Тест з Mac","source":"curl","needsRoman":true}'
+   ```
+
+   Очікувано: `{"id":"curl:test:1","duplicate":false}`; та сама команда
+   вдруге — `{"id":"curl:test:1","duplicate":true}`. Без token — `401`.
+   На iPhone у «Наживо»: відкрити застосунок (або повернутись у нього) —
+   подія в «Подіях» з міткою «наживо» і бейджем «потребує мене»
+   (`STAGE-1.md §6.7`).
 
 ## 10. Credential GBrain — один крок для Романа
 
@@ -362,10 +481,17 @@ gateway відповідає `-32601`, і агент одразу отримує
 token лише в URL upgrade і ніде в логах, таймаут + interrupt, малформований
 кадр, reconnect і перезапуск Hermes, `4001` → resume, `4007` → один create,
 busy, обрив клієнта, валідація `POST /api/v1/crow`, неушкоджений
-`GET /api/v1/state`. У застосунку: unit (мапа помилок, форма відповіді,
+`GET /api/v1/state`. Event Center (`test/events.test.ts`, `server.test.ts`):
+контракт і назване поле, конверт, файл 600, повтор `id`, ліміт 500, два
+записи водночас, пошкоджений файл, token; маршрут на справжньому сокеті —
+`201`, повтор, `401`, `403` через Serve, `405`, `400`, `413`, `503`, вимкнено
+= `501` і немає ключа `events`. У застосунку: unit (мапа помилок, форма відповіді,
 `askCrow` через живий gateway) і e2e `tests/e2e/crow-live.spec.ts` (envelope
 летить, відповідь показується, `502` → «Hermes не відповідає», без адреси —
-чесний текст, демо досі відповідає із заглушки і не торкається мережі).
+чесний текст, демо досі відповідає із заглушки і не торкається мережі) і
+`tests/e2e/live.spec.ts` (живі події на «Подіях» і Control, `needsRoman`,
+кеш із подіями, gateway без Event Center → демо з поясненням, Mac спить →
+останні події з причиною).
 
 ### 12.2. Приймання на Mac та iPhone — що доведено, що ні
 
@@ -385,9 +511,15 @@ busy, обрив клієнта, валідація `POST /api/v1/crow`, неу�
 відкрита задача в backlog, не автоматично наступна; її місце визначиться
 після Drive-аудиту. `HANDOFF.md` → «Відкрита продуктова задача в backlog».
 
+Event Center (зріз 3) на Mac і iPhone ще **не** прийнятий: потрібні кроки
+§9.7 і перевірка `STAGE-1.md §6.7`.
+
 ## 13. Далі (не в цих зрізах)
 
-Chips і priority з Hermes (зараз `[]` і `normal`); Проєкти/Блокери з
-канонічного стану; «Потребує мене» як похідне; Події з `timeline`; Агенти
-лише з того, що видно; фото в чат через Hermes; запис у GBrain з телефона —
-останнім.
+Перший справжній producer подій — Shopping Scout (окремим рішенням, після
+PASS зрізу 3); notification policy, потім WebPush — поверх Event Center, не
+замість нього; Chips і priority з Hermes (зараз `[]` і `normal`);
+Проєкти/Блокери з канонічного стану; «Потребує мене» з реальних задач і
+подій; Агенти лише з того, що видно; фото в чат через Hermes; запис у GBrain
+з телефона — останнім. (Колишній пункт «Події з `timeline`» GBrain знято:
+події живуть в Event Center, §5.1.)
