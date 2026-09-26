@@ -90,7 +90,13 @@ export function setupShell(): void {
   })
 
   window.addEventListener(UI_CONTEXT_CHANGED, () => updateContextLine())
-  onDataChanged(() => renderModule(getActiveModuleId()))
+  // The live snapshot arrives through this same signal, so the board's thought
+  // is recomputed with the screen: no navigation, no timer, no second read.
+  // An unchanged thought is a no-op in the board (showMessage).
+  onDataChanged(() => {
+    renderModule(getActiveModuleId())
+    greet(getActiveModuleId())
+  })
 
   // A stale thought should start saying how old it is without a tab change.
   setInterval(refreshAge, AGE_TICK_MS)
