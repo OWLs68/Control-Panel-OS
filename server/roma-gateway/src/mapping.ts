@@ -1,5 +1,5 @@
 /**
- * GBrain fact → Roma OS MemoryFact.
+ * GBrain fact → Crow OS MP MemoryFact.
  *
  * The field names on the left are what the installed GBrain (0.51) actually
  * returns from `recall` — checked against a live response on 21.09, not the

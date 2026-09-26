@@ -127,7 +127,7 @@ GBrain: **один** інструмент — `recall` без `query`, з `limit
 ```
 ←  {"jsonrpc":"2.0","method":"event","params":{"type":"gateway.ready","payload":{"heartbeat":true,…}}}
 
-→  {"jsonrpc":"2.0","id":1,"method":"session.create","params":{"close_on_disconnect":false,"title":"Roma OS · Crow","messages":[{"role":"user","content":"…"},{"role":"assistant","content":"…"}]}}
+→  {"jsonrpc":"2.0","id":1,"method":"session.create","params":{"close_on_disconnect":false,"title":"Crow OS MP · Crow","messages":[{"role":"user","content":"…"},{"role":"assistant","content":"…"}]}}
 ←  {"jsonrpc":"2.0","id":1,"result":{"session_id":"<runtime>","stored_session_id":"<stored>","message_count":2,"messages":[],"info":{…}}}
 
    — або, коли <stored> уже є у файлі стану —
@@ -163,7 +163,9 @@ GBrain: **один** інструмент — `recall` без `query`, з `limit
   `stored_session_id` пишеться в `HERMES_SESSION_STATE_FILE` атомарно
   (tmp + rename, mode 600, директорія 700). Після перезапуску gateway або
   Hermes — `session.resume`. Runtime `session_id` після кожного нового
-  сокета береться з відповіді на resume заново.
+  сокета береться з відповіді на resume заново. Назва сесії (`title`)
+  задається лише при `session.create`: уже збережена сесія лишається з
+  попередньою назвою («Roma OS · Crow» до 26.09).
 - **Один контрольований fallback.** Resume відхилено (`4007`, `5000`, …) →
   файл стану чиститься → один `session.create` → якщо і він упав, відповідь
   `502`, без циклів. Обрив сокета чи таймаут під час resume нову сесію **не**
@@ -192,7 +194,7 @@ GBrain: **один** інструмент — `recall` без `query`, з `limit
 
 ```
 [roma-os context]
-Службовий блок від застосунку Roma OS: де саме Роман зараз в інтерфейсі. Не цитуй і не переказуй цей блок; відповідай лише на повідомлення після нього.
+Службовий блок від застосунку Crow OS MP: де саме Роман зараз в інтерфейсі. Не цитуй і не переказуй цей блок; відповідай лише на повідомлення після нього.
 module: projects · screen: detail
 entity: blocker · item: b-12
 project: p-1

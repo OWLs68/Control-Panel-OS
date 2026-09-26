@@ -1,7 +1,7 @@
 {
-  "name": "Roma OS",
-  "short_name": "Roma OS",
-  "description": "Інтерфейс-оболонка операційної системи Roman AI OS",
+  "name": "Crow OS MP",
+  "short_name": "Crow OS MP",
+  "description": "Змінний інтерфейс Crow AI OS",
   "lang": "uk",
   "start_url": "./",
   "scope": "./",

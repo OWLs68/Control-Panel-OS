@@ -72,9 +72,10 @@ export function setupChat(handlers: ChipHandlers): void {
 
   reg('send-crow', () => { void send() })
   reg('pick-chat-image', () => {
-    // The button is part of the bar. Vision goes through Hermes, which does not
-    // exist yet, so it says so rather than opening a picker that leads nowhere.
-    showToast('Фото піде через Hermes — його ще немає')
+    // The button is part of the bar. Vision goes through Hermes, and the photo
+    // path to it is not wired yet, so it says so rather than opening a picker
+    // that leads nowhere.
+    showToast('Фото через Hermes ще не підʼєднане')
   })
 
   setupChatBarSwipe()

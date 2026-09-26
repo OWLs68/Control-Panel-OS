@@ -35,7 +35,7 @@ function render(root: HTMLElement): void {
 /** What the reader is looking at: fixtures, fresh GBrain, or the last snapshot and why. */
 function notice(memory: Sourced<MemoryFact[]>): string {
   if (memory.origin === 'mock') {
-    return dataNotice('GBrain ще не підключений — це локальні факти, не справжня памʼять системи.')
+    return dataNotice('Демо-режим: це стартові факти на телефоні, не памʼять GBrain. Справжня — у «Наживо».')
   }
   const status = liveStatus()
   const age = memory.fetchedAt ? ageLabel(memory.fetchedAt) : ''
@@ -73,7 +73,7 @@ function greeting() {
   const facts = memory.value
   const text = memory.origin === 'live'
     ? `${count(facts.length, 'факт', 'факти', 'фактів')} із GBrain${liveStatus().stale ? ' · дані застарілі' : ''}.`
-    : `${count(facts.length, 'факт', 'факти', 'фактів')} локально. GBrain ще не підключений.`
+    : `${count(facts.length, 'факт', 'факти', 'фактів')} — демо. Памʼять GBrain — у «Наживо».`
   return {
     title: 'Памʼять',
     text,

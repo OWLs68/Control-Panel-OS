@@ -76,6 +76,39 @@ test('memory comes from the gateway, marked live; the other screens stay demo', 
   await expect(page.locator('#screen-projects .data-notice')).toContainText('Джерело: демо-дані · fixtures:projects')
 })
 
+test('live Control never passes demo «Потребує мене» off as real, and the map draws live apart from demo', async ({ page }) => {
+  await page.route(`${GW}/**`, (route) => serveJson(route, 200, snapshot([FACT_78])))
+  await bootLive(page)
+  await ready(page)
+
+  const screen = page.locator('#screen-control')
+  // The tile does not count demo rows next to live data; the card says why, and names where the real ones are.
+  await expect(screen.locator('.metric').first().locator('.metric-num')).toHaveText('—')
+  await expect(screen.getByText('Наживо ще немає даних')).toBeVisible()
+  await expect(screen.getByText('Окремі ключі для клієнтів')).toHaveCount(0)
+  // Crow's greeting and the bell do not raise a demo item either.
+  await expect(page.locator('#crow-text')).toContainText('наживо ще не підʼєднане')
+  await expect(page.locator('#crow-bubble')).toHaveAttribute('data-priority', 'normal')
+  await expect(page.locator('#notif-dot')).toBeHidden()
+
+  // The map's lines come from each read's origin: memory is live, the rest is still demo.
+  await expect(screen.locator('.map-edge[data-node="memory"]')).toHaveAttribute('data-edge', 'live')
+  for (const node of ['agents', 'projects', 'events', 'access']) {
+    await expect(screen.locator(`.map-edge[data-node="${node}"]`)).toHaveAttribute('data-edge', 'stub')
+  }
+  await expect(screen.locator('.map-edge[data-edge="blocked"]')).toHaveCount(0)
+})
+
+test('demo Control keeps its demo rows, marked demo, and its map draws nothing as live', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.locator('body')).toHaveAttribute('data-ready', '1')
+  const screen = page.locator('#screen-control')
+  await expect(screen.getByText('Окремі ключі для клієнтів')).toBeVisible()
+  await expect(screen.locator('.source-tag[data-origin="mock"]').first()).toBeVisible()
+  await expect(screen.locator('.map-edge[data-edge="live"]')).toHaveCount(0)
+  await expect(page.locator('#notif-dot')).toBeVisible()
+})
+
 /**
  * Boot on one fact, then make the gateway answer with two and fire pageshow —
  * a bfcache restore — once the 5s guard against a double first load has

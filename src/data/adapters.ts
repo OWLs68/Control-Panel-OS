@@ -62,6 +62,16 @@ export function getAdapter(): DataAdapter {
 }
 
 /**
+ * «Потребує мене» in live mode has no live source yet: the attention list is
+ * still the demo fixtures. Shown next to live data, those rows would read as
+ * real things waiting on Roman — so in live mode Control, Crow's greeting and
+ * the bell do not show them at all, and say so instead.
+ */
+export function attentionIsDemoInLive(adapter: DataAdapter = active): boolean {
+  return adapter.origin === 'live' && adapter.attention().origin !== 'live'
+}
+
+/**
  * Swapping in the live adapter is a one-line change here, once a gateway
  * exists. Nothing else in the app needs to know.
  */

@@ -56,7 +56,7 @@ const manifest = await page.evaluate(async () => {
   const res = await fetch(new URL(href, location.href))
   return res.ok ? await res.json() : null
 })
-check(manifest?.name === 'Roma OS', 'the manifest resolves and names the app')
+check(manifest?.name === 'Crow OS MP', 'the manifest resolves and names the app')
 
 const swScope = await page.evaluate(async () => {
   if (!('serviceWorker' in navigator)) return null

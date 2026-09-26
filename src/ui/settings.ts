@@ -4,7 +4,7 @@
  * version line, a scroller of labelled groups, rows with an icon, a title, a
  * subtitle and a chevron, a value or a switch on the right.
  *
- * Only the rows Roma OS has a use for (Roman, 21.09) — not the donor's
+ * Only the rows Crow OS MP has a use for (Roman, 21.09) — not the donor's
  * profile, API key, currency, language or usage meter. Nothing here stores a
  * secret, and nothing here talks to a server.
  *
@@ -93,7 +93,7 @@ export function openSettings(): void {
     body: `
       <div class="settings-handle"></div>
       <div class="settings-title">Налаштування</div>
-      <div class="settings-version">Roma OS · ${escapeHtml(deployLabel().split(' · ')[0])}</div>
+      <div class="settings-version">Crow OS MP · ${escapeHtml(deployLabel().split(' · ')[0])}</div>
       <div class="modal-scroll">
         <div class="s-group-label">Оболонка</div>
         <div class="s-group">

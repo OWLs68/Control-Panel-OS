@@ -25,27 +25,36 @@
 - **branch:** `claude/fervent-johnson-xgrk8r`
 - **start_head:** `05a72d3`
 - **start_main:** `05a72d3`
-- **work_end_head:** `858466b`
+- **work_end_head:** `1962ba7`
 
-**Де зупинились.** Перший зріз «Задач» (сесія `xkbygw`) і документи Batch 3
-(`73e4dad`) — у `main` merge-комітом `e1684e5`: CI 88 ✅, deploy 33 ✅, живий
-URL на `e1684e5`. Потім у гілці — Project Sync (`f589462`, `1d8dec0`,
-`858466b`): Drive-тека `Claude Sync`, правило й формат snapshot у `CLAUDE.md`
-(«Правила», перший пункт), крок 6 `/finish`, PostToolUse hook
-`.claude/hooks/after-merge-sync.mjs` — snapshot лише коли merge оновлює
-`main`. Гілку запушено; у `main` Project Sync ще немає.
+**Де зупинились.** «Задачі» — у `main` з `e1684e5`. Project Sync — у `main`
+з `c9903c0` (24.09): Drive-тека `Claude Sync`, правило й формат snapshot у
+`CLAUDE.md`, крок 6 `/finish`, PostToolUse hook (спрацював наживо на цьому
+merge), час snapshot — `Europe/Amsterdam`. CI 92 ✅, deploy 34 ✅, живий URL
+на `c9903c0`. Поза цим repo: `OWLs68/Crow-Agents` — Shopping Scout v0.1 з
+MCP-адаптером на гілці `claude/cool-johnson-kag2sn` (у `main` Crow-Agents
+його ще немає); за `Crow AI OS — Current State` (26.09) Hermes уже викликає
+Scout через 8 вузьких MCP tools, тригера й доставки в Crow OS MP немає.
+
+**Фаза (Current State, 26.09).** Learning-first: розібратись з агентами на
+практиці, Shopping Scout — навчальний кейс. Crow OS MP — допоміжна панель:
+робота тут лише там, де вона прямо підтримує видимість і контроль (Kanban,
+Events, статус агентів, blockers, `needsRoman`) або прибирає конкретний
+usability blocker. Діяльність агентів має спершу ставати справжніми
+структурованими подіями: real Events pipeline → notification policy →
+WebPush (Product Spec §7).
 
 **Blockers.** Немає.
 
-**Наступний крок.** «merge» Project Sync у `main` — лише за словом; hook діє
-в сесіях, чия гілка його містить. Далі — «Задачі» на iPhone за
-`STAGE-1.md §6.6` на живому URL.
+**Наступний крок.** Real Events pipeline, перший зріз: `curl` →
+`POST /api/v1/events` → сховище подій біля gateway → `GET /api/v1/state` →
+екран «Події» і Control. Без WebPush, без Scout як producer.
 
 **Чекає рішення Романа.**
-1. «merge» гілки з Project Sync у `main`
-2. Перевірка «Задач» на iPhone за `STAGE-1.md §6.6`
-3. Envelope «Задач» без вибору несе до пʼяти назв «потребує Романа» (`GATEWAY.md §6`) — лишити чи обмежити
-4. Далі за backlog: види задач у Проєктах/Агентах; Control «Потребує мене»; редагування й видалення; якість відповідей Crow
+1. Перевірка «Задач» на iPhone за `STAGE-1.md §6.6`
+2. Envelope «Задач» без вибору несе до пʼяти назв «потребує Романа» (`GATEWAY.md §6`) — лишити чи обмежити
+3. Shopping Scout як перший producer подій — після PASS зрізу Events, окремим рішенням
+4. Далі за backlog: види задач у Проєктах/Агентах; Control «Потребує мене» з реальних даних; редагування й видалення; якість відповідей Crow
 
 ---
 
@@ -462,8 +471,8 @@ Finance, Evening, Me, інтелекту digital clone. *(Межа Етапу 1,
   шлях резолвиться через `scripts/chromium-path.mjs`
 
 **Відкриті питання до Романа:**
-1. Чи лишається окрема вкладка Notes
+1. ~~Чи лишається окрема вкладка Notes~~ — відкладено (Product Spec §11, parked)
 2. Шрифтова пара — зараз Bricolage Grotesque + Manrope, підтвердити або замінити
 3. ~~Коли підключати Productivity~~ — знято 22.09: наступний продуктовий крок — native work tracker
 4. ~~Реальний спосіб достукатись до Hermes з телефона~~ — є: Roma gateway → Hermes `/api/ws` (21.09)
-5. Чи потрібна темна тема
+5. ~~Чи потрібна темна тема~~ — відкладено (Product Spec §11, parked)

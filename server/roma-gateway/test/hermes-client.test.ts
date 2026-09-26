@@ -62,7 +62,7 @@ test('ready → session.create (close_on_disconnect=false) → prompt.submit →
   assert.deepEqual(fake.calls.map((x) => x.method), ['session.create', 'prompt.submit'])
   const create = fake.callsTo('session.create')[0]?.params
   assert.equal(create?.close_on_disconnect, false)
-  assert.equal(create?.title, 'Roma OS · Crow')
+  assert.equal(create?.title, 'Crow OS MP · Crow')
   assert.equal('messages' in (create ?? {}), false, 'no history → no seed')
   assert.equal(store.value, 'key-1')
   const submit = fake.callsTo('prompt.submit')[0]?.params

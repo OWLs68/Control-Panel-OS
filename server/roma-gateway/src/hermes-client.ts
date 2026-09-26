@@ -73,7 +73,7 @@ const SESSION_RPC_TIMEOUT_MS = 30_000     // Hermes' own agent-wait ceiling on s
 const INTERRUPT_TIMEOUT_MS = 10_000
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 15_000   // what Hermes' own clients do
 const DEFAULT_HEARTBEAT_DEADLINE_MS = 45_000
-const DEFAULT_TITLE = 'Roma OS · Crow'
+const DEFAULT_TITLE = 'Crow OS MP · Crow'
 const WS_OPEN = 1
 
 interface Pending {
