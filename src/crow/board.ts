@@ -244,8 +244,24 @@ export function setZoneState(next: ZoneState): void {
 
 /* ── The message ─────────────────────────────────────────────────────── */
 
+/**
+ * The same thought twice is not news. The board is recomputed whenever the
+ * data changes — including every live refresh — so an identical message must
+ * leave it alone: no cross-fade, no re-rendered chips, no reset age.
+ */
+function sameAsCurrent(msg: BoardMessage): boolean {
+  if (!current) return false
+  return current.title === msg.title && current.text === msg.text && current.priority === msg.priority
+    && current.chips.length === msg.chips.length
+    && current.chips.every((c, i) => {
+      const next = msg.chips[i]
+      return !!next && c.id === next.id && c.label === next.label
+    })
+}
+
 export function showMessage(msg: BoardMessage): void {
   if (!zone) return
+  if (sameAsCurrent(msg)) return
   current = msg
 
   const bubble = $('#crow-bubble', zone)

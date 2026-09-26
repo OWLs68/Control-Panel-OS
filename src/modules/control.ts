@@ -9,8 +9,8 @@
 import { relativeTime } from '../core/dom.js'
 import { count, plural } from '../core/plural.js'
 import { reg } from '../core/delegation.js'
-import { attentionIsDemoInLive, getAdapter, type DataAdapter } from '../data/adapters.js'
-import type { Attention, Origin, Severity } from '../data/types.js'
+import { attentionIsDemoInLive, getAdapter, needsRomanEvents, type DataAdapter } from '../data/adapters.js'
+import type { Attention, Origin, Severity, SystemEvent } from '../data/types.js'
 import { getGateway } from '../hermes/gateway.js'
 import { icons, type IconName } from '../ui/icons.js'
 import { badge, card, cardHead, dot, empty, metric, row, sourceTag } from '../ui/primitives.js'
@@ -33,6 +33,9 @@ function render(root: HTMLElement): void {
   const agents = adapter.agents()
   const projects = adapter.projects()
   const events = adapter.events(4)
+  // «Потребує мене» live: the same events «Події» shows, filtered by the flag.
+  // Null — no live feed, so the block stays exactly as it was.
+  const waiting = needsRomanEvents(adapter)
   // Live or stub is the gateway's word, not the adapter's: the two are switched together.
   const crowLive = getGateway().mode === 'live'
   const demoAttention = attentionIsDemoInLive(adapter)
@@ -42,16 +45,25 @@ function render(root: HTMLElement): void {
 
   root.innerHTML = `
     <div class="metrics">
-      ${demoAttention
-        ? metric('—', 'Потребує мене', 'alert', 'error', { action: 'open-module', data: { module: 'work' } })
-        : metric(attention.value.length, 'Потребує мене', 'alert', 'error', { action: 'open-module', data: { module: 'projects' } })}
+      ${waiting
+        ? metric(waiting.value.length, 'Потребує мене', 'alert', 'error', { action: 'open-module', data: { module: 'events' } })
+        : demoAttention
+          ? metric('—', 'Потребує мене', 'alert', 'error', { action: 'open-module', data: { module: 'work' } })
+          : metric(attention.value.length, 'Потребує мене', 'alert', 'error', { action: 'open-module', data: { module: 'projects' } })}
       ${metric(working.length, 'У роботі', 'play', 'amber', { action: 'open-module', data: { module: 'agents' } })}
       ${metric(activeProjects.length, 'Проєкти', 'projects', 'success', { action: 'open-module', data: { module: 'projects' } })}
       ${metric(eventsToday(adapter), 'Сьогодні', 'events', 'info', { action: 'open-module', data: { module: 'events' } })}
     </div>
 
     <div class="section-label">Потребує мене</div>
-    ${demoAttention
+    ${waiting
+      ? card(
+          cardHead('alert', 'Потребує мене', sourceTag(waiting)),
+          waiting.value.length
+            ? waiting.value.map(waitingRow).join('')
+            : empty('check', 'Нічого не чекає', 'Жодна подія не чекає на твоє рішення.'),
+        )
+      : demoAttention
       ? card(cardHead('alert', 'Потребує мене'),
           empty('clock', 'Наживо ще немає даних', 'Живого джерела для цього блоку ще немає. Що чекає на тебе зараз — у «Задачах».'))
       : attention.value.length
@@ -112,6 +124,20 @@ function render(root: HTMLElement): void {
       `<div class="map">${systemMap()}</div>`,
     )}
   `
+}
+
+/** A live event that waits on Roman — the same flag and words as «Події» and a task. */
+function waitingRow(e: SystemEvent): string {
+  const severity = e.severity ?? 'info'
+  const when = relativeTime(e.ts, 60_000) || 'щойно'
+  return row({
+    title: e.title,
+    sub: `${e.detail ? `${e.detail}\n` : ''}${e.source} · ${when}`,
+    lead: dot(severityDot(severity)),
+    trailing: badge('потребує мене', 'error'),
+    action: 'open-module',
+    data: { module: 'events' },
+  })
 }
 
 function attentionRow(a: Attention): string {
@@ -226,21 +252,41 @@ function context(): ModuleContext {
   const working = agents.value.filter((a) => a.task !== null)
   const demo = (origin: Origin) => (adapter.origin === 'live' && origin !== 'live' ? ' (демо)' : '')
   // Live Hermes is never handed the demo fixtures as if they were real work waiting on Roman.
+  const waiting = needsRomanEvents(adapter)
   const attention = attentionIsDemoInLive(adapter) ? null : adapter.attention().value
   return {
     activeScreen: 'control',
     visibleState: [
-      attention
+      waiting
+        ? `${count(waiting.value.length, 'подія потребує', 'події потребують', 'подій потребує')} Романа`
+        : attention
         ? `${count(attention.length, 'річ потребує', 'речі потребують', 'речей потребує')} Романа`
         : '«Потребує мене»: живих даних ще немає',
       `${count(working.length, 'агент', 'агенти', 'агентів')} у роботі${demo(agents.origin)}`,
       getGateway().mode === 'live' ? 'Hermes: наживо, Crow іде через gateway' : 'Hermes: демо-режим, відповідає заглушка',
     ],
-    blockers: attention ? attention.map((a) => `${a.title} (${a.risk}): ${a.detail}`) : [],
+    blockers: waiting
+      ? waiting.value.map((e) => `${e.title} (${e.source})${e.detail ? `: ${e.detail}` : ''}`)
+      : attention ? attention.map((a) => `${a.title} (${a.risk}): ${a.detail}`) : [],
   }
 }
 
 function greeting() {
+  const waiting = needsRomanEvents()
+  if (waiting) {
+    const worst = waiting.value[0]
+    return {
+      title: 'Привіт!',
+      text: worst
+        ? `${count(waiting.value.length, 'подія чекає', 'події чекають', 'подій чекає')} на тебе, останнє — «${worst.title}».`
+        : 'Нічого не чекає на тебе. Система працює сама.',
+      priority: (worst?.severity === 'critical' ? 'urgent' : 'normal') as 'urgent' | 'normal',
+      chips: [
+        { id: 'control-what', label: 'Що потребує мене?', action: 'chat' as const, tone: 'accent' as const },
+        { id: 'control-events', label: 'Відкрий події', action: 'nav' as const, target: 'events' },
+      ],
+    }
+  }
   if (attentionIsDemoInLive()) {
     return {
       title: 'Привіт!',

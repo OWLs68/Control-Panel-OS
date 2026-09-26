@@ -243,7 +243,16 @@ test('live events: the Event Center feed on «Події» and on Control, marke
   const control = page.locator('#screen-control')
   await expect(control.locator('.metric').nth(3).locator('.metric-num')).toHaveText('2')
   await expect(control.locator('.map-edge[data-node="events"]')).toHaveAttribute('data-edge', 'live')
-  await expect(control.getByText('Тест з Mac')).toBeVisible()
+  await expect(control.locator('.card', { hasText: 'Стан системи' })).toContainText('Тест з Mac')
+
+  // «Потребує мене» reads the very same events: one of the two waits on Roman.
+  await expect(control.locator('.metric').first().locator('.metric-num')).toHaveText('1')
+  const needsMe = control.locator('.card', { hasText: 'Потребує мене' })
+  await expect(needsMe.locator('.card-row-title')).toHaveText(['Тест з Mac'])
+  await expect(needsMe.locator('.badge')).toHaveText(['потребує мене'])
+  await expect(needsMe.locator('.source-tag')).toHaveAttribute('data-origin', 'live')
+  await expect(needsMe.locator('.source-tag')).toHaveAttribute('title', 'gateway:events')
+  await expect(control.getByText('Наживо ще немає даних')).toHaveCount(0)
 
   await gotoModule(page, 'events')
   const screen = page.locator('#screen-events')
@@ -291,6 +300,53 @@ test('when the Mac is gone the last events stay, with their age and the reason',
   await expect(screen.getByText('Тест з Mac')).toBeVisible()
   await expect(screen.locator('.source-tag')).toHaveAttribute('data-origin', 'live')
   await expect(screen.locator('.data-notice')).toContainText('Оновлено щойно · Mac недоступний')
+})
+
+test('live events with nothing waiting: Control shows a real zero, not «немає даних»', async ({ page }) => {
+  await page.route(`${GW}/**`, (route) => serveJson(route, 200, snapshot([FACT_78], [EV_DONE])))
+  await bootLive(page)
+  await ready(page)
+
+  const control = page.locator('#screen-control')
+  await expect(control.locator('.metric').first().locator('.metric-num')).toHaveText('0')
+  const needsMe = control.locator('.card', { hasText: 'Потребує мене' })
+  await expect(needsMe.getByText('Нічого не чекає')).toBeVisible()
+  await expect(needsMe.locator('.card-row')).toHaveCount(0)
+  await expect(control.getByText('Наживо ще немає даних')).toHaveCount(0)
+
+  // No navigation: the board caught the snapshot up by itself.
+  await expect(page.locator('#crow-text')).toContainText('Нічого не чекає на тебе')
+  await expect(page.locator('#crow-text')).not.toContainText('не підʼєднане')
+})
+
+/**
+ * The board is a read of the same data as the screen, so it must follow the
+ * data — not a tab change. Boot on a live feed with nothing waiting, then let
+ * a needsRoman event arrive, and the thought has to catch up on its own.
+ * Deliberately no gotoModule anywhere in this test.
+ */
+test('the thought follows the snapshot: the board catches up without navigation', async ({ page }) => {
+  let events: unknown[] = []
+  await page.route(`${GW}/**`, (route) => serveJson(route, 200, snapshot([FACT_78], events)))
+  await bootLive(page)
+  await ready(page)
+
+  // Boot already proves it: greet() ran before the snapshot landed, and the
+  // board still ends up on the live wording.
+  await expect(page.locator('#crow-text')).toContainText('Нічого не чекає на тебе')
+  await expect(page.locator('#screen-control .metric').first().locator('.metric-num')).toHaveText('0')
+
+  // Now one event arrives that waits on Roman. A bfcache restore is the app's
+  // own refresh trigger (source.ts) — no polling, no second read added here.
+  events = [EV_ALERT]
+  await page.waitForTimeout(5_200)
+  await page.evaluate(() => window.dispatchEvent(new Event('pageshow')))
+
+  await expect(page.locator('#crow-text')).toContainText('1 подія чекає на тебе')
+  await expect(page.locator('#crow-text')).toContainText('Тест з Mac')
+  // Still standing on Control, and the tile moved with the thought.
+  await expect(page.locator('#screen-control')).toHaveClass(/active/)
+  await expect(page.locator('#screen-control .metric').first().locator('.metric-num')).toHaveText('1')
 })
 
 test('an empty live feed is live and empty, not demo', async ({ page }) => {
