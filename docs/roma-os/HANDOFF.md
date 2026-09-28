@@ -20,48 +20,33 @@
 > «поточний HEAD». Актуальний HEAD тут не зберігається взагалі: `/start`
 > бере його через `git rev-parse HEAD`.
 
-- **session_id:** `20260923-1903-xgrk8r` (наближення: `/start` не запускався, межі — з reflog)
-- **started_at:** `2026-09-23T19:03:51Z`
-- **branch:** `claude/fervent-johnson-xgrk8r`
-- **start_head:** `05a72d3`
-- **start_main:** `05a72d3`
-- **work_end_head:** `1962ba7`
+- **session_id:** `20260926-1008-51tdj4`
+- **started_at:** `2026-09-26T10:08:02Z`
+- **branch:** `claude/new-session-51tdj4`
+- **start_head:** `c9903c0`
+- **start_main:** `c9903c0`
+- **work_end_head:** `6cc6d80`
 
-**Де зупинились.** «Задачі» — у `main` з `e1684e5`. Project Sync — у `main`
-з `c9903c0` (24.09): Drive-тека `Claude Sync`, правило й формат snapshot у
-`CLAUDE.md`, крок 6 `/finish`, PostToolUse hook (спрацював наживо на цьому
-merge), час snapshot — `Europe/Amsterdam`. CI 92 ✅, deploy 34 ✅, живий URL
-на `c9903c0`. Поза цим repo: `OWLs68/Crow-Agents` — Shopping Scout v0.1 з
-MCP-адаптером на гілці `claude/cool-johnson-kag2sn` (у `main` Crow-Agents
-його ще немає); за `Crow AI OS — Current State` (26.09) Hermes уже викликає
-Scout через 8 вузьких MCP tools, тригера й доставки в Crow OS MP немає.
-
-**Фаза (Current State, 26.09).** Learning-first: розібратись з агентами на
-практиці, Shopping Scout — навчальний кейс. Crow OS MP — допоміжна панель:
-робота тут лише там, де вона прямо підтримує видимість і контроль (Kanban,
-Events, статус агентів, blockers, `needsRoman`) або прибирає конкретний
-usability blocker. Діяльність агентів має спершу ставати справжніми
-структурованими подіями: real Events pipeline → notification policy →
-WebPush (Product Spec §7).
+**Де зупинились.** `main` = `21cece1`: CI 96 ✅, deploy 36 ✅, живий URL на ньому.
+У ньому — merge цієї сесії `d1174c8`: прибраний drift (назви Crow OS MP,
+чесні live/demo тексти, карта за походженням даних) і real Events pipeline
+(Event Center у gateway 0.3.0 → `/state` → «Події», Control; `GATEWAY.md §5.1`).
+Поверх — сесія на Mac 27.09 (`a814442`, `db5d27c`): «Потребує мене» наживо з
+подій з `needsRoman`, бульбашка Crow оновлюється з даними. Приймання на Mac та
+iPhone (`GATEWAY.md §9.7`, `STAGE-1.md §6.7`) у repo не записане. Фаза —
+learning-first; Shopping Scout — на гілці Crow-Agents `claude/cool-johnson-kag2sn`.
 
 **Blockers.** Немає.
 
-**Наступний крок.** Real Events pipeline, перший зріз, зроблений у гілці
-`claude/new-session-51tdj4` (локальні коміти, 26.09, **не запушено**): `curl` →
-`POST /api/v1/events` → Event Center біля gateway → `GET /api/v1/state` →
-«Події» і Control (`GATEWAY.md §5.1`). Разом із ним — прибраний drift: видимі
-назви Crow OS MP, чесні тексти демо-режиму, у «Наживо» немає демо-«Потребує
-мене», карта системи за реальним станом. Далі: «push» і «merge» — лише за
-словом; кроки на Mac (`GATEWAY.md §9.7`); приймання на iPhone
-(`STAGE-1.md §6.7`). Без WebPush, без Scout як producer.
+**Наступний крок.** Приймання Events на Mac та iPhone (`GATEWAY.md §9.7`,
+`STAGE-1.md §6.7`); після PASS — Shopping Scout як перший producer подій.
 
-**Чекає рішення Романа.**
-1. Перевірка «Задач» на iPhone за `STAGE-1.md §6.6`
-2. Envelope «Задач» без вибору несе до пʼяти назв «потребує Романа» (`GATEWAY.md §6`) — лишити чи обмежити
-3. «push» і «merge» зрізу Events, потім кроки на Mac (`GATEWAY.md §9.7`) і приймання `STAGE-1.md §6.7`
-4. Shopping Scout як перший producer подій — після PASS зрізу Events, окремим рішенням
-5. Далі за backlog: види задач у Проєктах/Агентах; Control «Потребує мене» з реальних даних (задачі + події); notification policy → WebPush; редагування й видалення; якість відповідей Crow
-
+**Чекає Романа.**
+1. Кроки на Mac `GATEWAY.md §9.7` і приймання `STAGE-1.md §6.7` — або підтвердити, що вже зроблено
+2. «merge» docs-коміту цього `/finish` у `main`
+3. Shopping Scout як producer — окремим рішенням
+4. Перевірка «Задач» на iPhone (`STAGE-1.md §6.6`); envelope «Задач» — до пʼяти назв (`GATEWAY.md §6`)
+5. Хвіст `claude/fervent-johnson-xgrk8r` (`aae5d42`) — не вливався; лишити чи прибрати
 ---
 
 ## 0. Найважливіше правило

@@ -14,6 +14,42 @@
 
 ---
 
+## 2026-09-26 — 20260926-1008-51tdj4 — drift, Event Center, живі Події
+
+- Зроблено: read-only аудит канон Drive → docs repo → код/UI, окремо — Events
+  pipeline і Shopping Scout (Crow-Agents, лише читання); без змін.
+- Зроблено: `f411e7a` — drift: `CLAUDE.md` 5 станів + `needsRoman` прапорцем;
+  видимі назви Crow OS MP / Crow AI OS; чесні тексти демо-режиму; у «Наживо»
+  демо-«Потребує мене» не як справжнє; карта за походженням даних; «Сьогодні»
+  без ліміту 4; `HANDOFF` з актуального з `aae5d42`.
+- Зроблено: `51953d2` — Event Center у gateway 0.3.0 (`GATEWAY.md §5.1`).
+- Зроблено: `6cc6d80` — живі події на телефоні; `GATEWAY.md §5.1/§9.7`,
+  `STAGE-1.md §6.7`, `PORTING.md §3`.
+- Зроблено: merge у `main` — `d1174c8` (verify ✅ 46 unit + gateway 83, e2e ✅
+  81/81; CI 94 ✅ гілка; CI 95 ✅, deploy 35 ✅ main); merge-snapshot
+  `2026-09-26_203446_merge_d1174c8.md` у `Claude Sync`.
+- Поза сесією: 27.09 сесія Claude на Mac (автор OWL) — `a814442`, `db5d27c`,
+  merge `21cece1` у `main` («Потребує мене» наживо з подій, реактивна
+  бульбашка); CI 96 ✅, deploy 36 ✅. Документи під це підтягнув цей `/finish`
+  (`STAGE-1.md`, `GATEWAY.md`).
+- Рішення Романа: `needsRoman` — прапорець поверх виду події, не вид; Event
+  Center біля gateway, не GBrain timeline; внутрішні назви `roma_*`, `ROMA_*`,
+  `server/roma-gateway` не перейменовувати; `aae5d42` цілком не вливати —
+  лише актуальне (доповнення журналу xgrk8r лишилось на тій гілці); push і
+  merge — окремими словами.
+- Інциденти: e2e `modules.spec.ts:38` раз упав під паралельним прогоном,
+  повтор 81/81 → `ISS-009`. Stop hook просив push до слова — HOT RULE 8,
+  чекав. Після перезапуску сесії локальний `main` був застарілий (`05a72d3`) —
+  fast-forward до `origin/main` перед merge.
+- Відкрито / далі: приймання на Mac та iPhone (`GATEWAY.md §9.7`,
+  `STAGE-1.md §6.7`); Shopping Scout як перший producer; notification policy →
+  WebPush.
+
+Branch `claude/new-session-51tdj4` · Start `c9903c0` · Work end `6cc6d80`
+· verify ✅ · e2e ✅ 81/81 · CI 94/95 ✅ · deploy 35 ✅ (`main` зараз `21cece1`, deploy 36 ✅)
+
+---
+
 ## 2026-09-23 — 20260923-1903-xgrk8r — «Задачі» в main, Project Sync
 
 - Зроблено: гілку `claude/new-session-xkbygw` влито fast-forward до `89bc263`
