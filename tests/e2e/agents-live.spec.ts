@@ -277,7 +277,10 @@ test('a cache written before agents and payloads existed still loads; the Mac is
 
 test('a cache that is garbage is dropped quietly: no crash, the demo is what shows', async ({ page }) => {
   const errors: string[] = []
-  page.on('pageerror', (e) => errors.push(e.message))
+  // WebKit reports «ResizeObserver loop completed with undelivered notifications» as an error event:
+  // the browser's own note that an observer's callback moved layout, not a fault in the app (the
+  // spec does not treat it as one). Every other page error still fails the test.
+  page.on('pageerror', (e) => { if (!e.message.startsWith('ResizeObserver loop')) errors.push(e.message) })
   await page.route(`${GW}/**`, (route) => route.abort('failed'))
   await page.addInitScript(({ url, modules }) => {
     localStorage.setItem('roma_data_source', 'live')
