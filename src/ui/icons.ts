@@ -14,6 +14,7 @@ export const icons = {
   check: s('<path d="m5 12.5 4.5 4.5L19 7"/>'),
   clock: s('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 1.8"/>'),
   chevron: s('<path d="m9 5.5 6.5 6.5L9 18.5"/>'),
+  chevronLeft: s('<path d="m15 5.5-6.5 6.5 6.5 6.5"/>'),
   chevronUp: s('<path d="m5.5 15 6.5-6.5 6.5 6.5"/>'),
   chevronDown: s('<path d="m5.5 9 6.5 6.5L18.5 9"/>'),
   sun: s('<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.2 5.2l1.4 1.4M17.4 17.4l1.4 1.4M18.8 5.2l-1.4 1.4M6.6 17.4l-1.4 1.4"/>'),

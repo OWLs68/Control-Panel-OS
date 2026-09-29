@@ -7,41 +7,14 @@
  * and it says so. The feed is history, not a notification: push and a
  * notification policy come later, on top of it.
  */
-import { relativeTime } from '../core/dom.js'
 import { count } from '../core/plural.js'
 import { getAdapter } from '../data/adapters.js'
 import type { Sourced, SystemEvent } from '../data/types.js'
 import { icons } from '../ui/icons.js'
 import { liveNoticeText } from '../ui/live-notice.js'
-import { badge, card, cardHead, dataNotice, dot, empty, row, sourceTag, type Tone } from '../ui/primitives.js'
+import { eventRow, eventWhen } from '../ui/event-row.js'
+import { card, cardHead, dataNotice, empty, sourceTag } from '../ui/primitives.js'
 import { registerModule, type ModuleContext } from './registry.js'
-
-// The first five are the demo feed's; the agent kinds come from the Event Center.
-const kindLabel: Record<SystemEvent['kind'], string> = {
-  deploy: 'деплой', index: 'індекс', backup: 'бекап', agent: 'агент', note: 'запис',
-  agent_started: 'почав', agent_result: 'результат', agent_finished: 'завершив', agent_blocked: 'заблоковано', alert: 'важливо',
-}
-const kindTone: Record<SystemEvent['kind'], Tone> = {
-  deploy: 'info', index: 'amber', backup: 'success', agent: 'info', note: 'neutral',
-  agent_started: 'info', agent_result: 'success', agent_finished: 'neutral', agent_blocked: 'warning', alert: 'amber',
-}
-
-/** Under a minute is «щойно», not «0 хв тому». */
-const when = (e: SystemEvent) => relativeTime(e.ts, 60_000) || 'щойно'
-
-function eventRow(e: SystemEvent): string {
-  // «Потребує мене» — the same flag and the same words as on a task. Two
-  // badges stack (.card-row-tags) so the title keeps its width.
-  const tags = e.needsRoman
-    ? `<span class="card-row-tags">${badge('потребує мене', 'error')}${badge(kindLabel[e.kind], kindTone[e.kind])}</span>`
-    : badge(kindLabel[e.kind], kindTone[e.kind])
-  return row({
-    title: e.title,
-    sub: `${e.detail ? `${e.detail}\n` : ''}${e.source} · ${when(e)}`,
-    lead: e.severity === 'critical' ? dot('error') : e.severity === 'warning' ? dot('warning') : undefined,
-    trailing: tags,
-  })
-}
 
 /** Live and fresh, live and stale, or demo — and, in live mode, why it is still demo. */
 function notice(events: Sourced<SystemEvent[]>): string {
@@ -57,7 +30,7 @@ function render(root: HTMLElement): void {
   root.innerHTML = `
     <div class="section-label">Стрічка подій</div>
     ${events.value.length
-      ? card(cardHead('events', 'Події', sourceTag(events)), events.value.map(eventRow).join(''))
+      ? card(cardHead('events', 'Події', sourceTag(events)), events.value.map((e) => eventRow(e)).join(''))
       : card(cardHead('events', 'Події', sourceTag(events)), empty('events', 'Подій немає',
           events.origin === 'live' ? 'Жоден агент ще нічого не повідомив.' : 'Система ще нічого не записала.'))}
     ${notice(events)}
@@ -71,7 +44,7 @@ function context(): ModuleContext {
   return {
     activeScreen: 'events',
     visibleState: events.value.map((e) =>
-      `${e.title} (${e.source}, ${when(e)}${e.needsRoman ? ', потребує Романа' : ''})${demo}`),
+      `${e.title} (${e.source}, ${eventWhen(e)}${e.needsRoman ? ', потребує Романа' : ''})${demo}`),
   }
 }
 

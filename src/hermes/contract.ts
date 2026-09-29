@@ -11,7 +11,7 @@
  * shapes the real gateway will have to speak; the stub answers them locally.
  */
 
-import type { MemoryFact, SystemEvent } from '../data/types.js'
+import type { Agent, MemoryFact, SystemEvent } from '../data/types.js'
 
 /** What Crow is told about where Roman is standing when he asks something. */
 export interface UiContext {
@@ -82,8 +82,9 @@ export class GatewayError extends Error {
 }
 
 /**
- * What GET /api/v1/state carries. Only what is really live: memory, and the
- * Event Center's newest events when it is switched on. Keys that are absent
+ * What GET /api/v1/state carries. Only what is really live: memory, the Event
+ * Center's newest events when it is switched on, and the agents (the gateway's
+ * registry read against those events and Hermes' answer). Keys that are absent
  * stay demo on the phone.
  */
 export interface LiveSnapshot {
@@ -93,6 +94,8 @@ export interface LiveSnapshot {
   source: string
   /** Newest first. Absent — the Event Center is off (or an older gateway): the feed stays demo. */
   events?: SystemEvent[]
+  /** Absent — an older gateway (or an older cache): the agents stay demo. */
+  agents?: Agent[]
 }
 
 /** Every gateway — stub or real — satisfies exactly this. */

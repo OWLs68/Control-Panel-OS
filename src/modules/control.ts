@@ -10,10 +10,11 @@ import { relativeTime } from '../core/dom.js'
 import { count, plural } from '../core/plural.js'
 import { reg } from '../core/delegation.js'
 import { attentionIsDemoInLive, getAdapter, needsRomanEvents, type DataAdapter } from '../data/adapters.js'
-import type { Attention, Origin, Severity, SystemEvent } from '../data/types.js'
+import type { Agent, Attention, Origin, Severity, Sourced, SystemEvent } from '../data/types.js'
 import { getGateway } from '../hermes/gateway.js'
 import { icons, type IconName } from '../ui/icons.js'
 import { badge, card, cardHead, dot, empty, metric, row, sourceTag } from '../ui/primitives.js'
+import { activityLine, statusDot } from './agent-screen.js'
 import { registerModule, type ModuleContext } from './registry.js'
 import { navigate } from './navigate.js'
 
@@ -25,6 +26,18 @@ const DAY = 24 * 3_600_000
 /** What is on screen today counts from the same read as the map: a small read would cap the tile. */
 function eventsToday(adapter: DataAdapter): number {
   return adapter.events(40).value.filter((e) => Date.now() - e.ts < DAY).length
+}
+
+/**
+ * The rows of «У роботі». Live agents have no `task`, they have what the Event
+ * Center last heard from them: an agent with something to show is a row, one
+ * without (nothing heard yet) is left out — no empty rows. Demo agents keep
+ * their fixture task.
+ */
+function workingAgents(agents: Sourced<Agent[]>): Agent[] {
+  return agents.origin === 'live'
+    ? agents.value.filter((a) => a.lastActivity)
+    : agents.value.filter((a) => a.task !== null)
 }
 
 function render(root: HTMLElement): void {
@@ -40,7 +53,7 @@ function render(root: HTMLElement): void {
   const crowLive = getGateway().mode === 'live'
   const demoAttention = attentionIsDemoInLive(adapter)
 
-  const working = agents.value.filter((a) => a.task !== null)
+  const working = workingAgents(agents)
   const activeProjects = projects.value.filter((p) => p.status === 'active')
 
   root.innerHTML = `
@@ -80,13 +93,15 @@ function render(root: HTMLElement): void {
       working.length
         ? working.map((a) => row({
             title: a.name,
-            sub: a.task ?? '',
-            lead: dot(a.status === 'online' ? 'success' : 'idle'),
+            sub: (agents.origin === 'live' ? activityLine(a) : a.task) ?? '',
+            lead: dot(statusDot(a.status)),
             trailing: badge(a.risk, 'neutral', true),
             action: 'open-agent',
             data: { id: a.id, label: a.name },
           })).join('')
-        : empty('clock', 'Тиша', 'Жоден агент зараз нічого не робить.'),
+        : agents.origin === 'live'
+          ? empty('clock', 'Даних ще немає', 'Жоден агент ще нічого не повідомив.')
+          : empty('clock', 'Тиша', 'Жоден агент зараз нічого не робить.'),
     )}
 
     <div class="section-label">Стан системи</div>
@@ -103,7 +118,8 @@ function render(root: HTMLElement): void {
         }),
         row({
           title: 'Агенти',
-          sub: `${agents.value.filter((a) => a.status === 'online').length} з ${agents.value.length} онлайн`,
+          sub: `${agents.value.filter((a) => a.status === 'online').length} з ${agents.value.length} онлайн` +
+            (agents.value.some((a) => a.status === 'unknown') ? `, без даних: ${agents.value.filter((a) => a.status === 'unknown').length}` : ''),
           lead: dot(agents.value.some((a) => a.status === 'online') ? 'success' : 'idle'),
           action: 'open-module',
           data: { module: 'agents' },
@@ -249,7 +265,7 @@ function systemMap(): string {
 function context(): ModuleContext {
   const adapter = getAdapter()
   const agents = adapter.agents()
-  const working = agents.value.filter((a) => a.task !== null)
+  const working = workingAgents(agents)
   const demo = (origin: Origin) => (adapter.origin === 'live' && origin !== 'live' ? ' (демо)' : '')
   // Live Hermes is never handed the demo fixtures as if they were real work waiting on Roman.
   const waiting = needsRomanEvents(adapter)

@@ -8,12 +8,14 @@ import {
   type EventInput,
 } from '../src/events.ts'
 
+import { shoppingFixture } from '../../../tests/fixtures/shopping-prices.ts'
+
 const NOW = Date.parse('2026-09-26T12:00:00Z')
 
 function input(over: Partial<EventInput> = {}): EventInput {
   return {
     id: null, kind: 'agent_result', title: 'Готово', detail: '', source: 'curl',
-    agentId: null, taskId: null, projectId: null, severity: 'info', needsRoman: false, ts: null, ...over,
+    agentId: null, taskId: null, projectId: null, severity: 'info', needsRoman: false, ts: null, data: null, ...over,
   }
 }
 
@@ -26,7 +28,7 @@ test('the smallest event is a kind, a title and a source; the rest has defaults'
   assert.ok(r.ok)
   assert.deepEqual(r.input, {
     id: null, kind: 'alert', title: 'Лосось −40%', detail: '', source: 'curl',
-    agentId: null, taskId: null, projectId: null, severity: 'info', needsRoman: false, ts: null,
+    agentId: null, taskId: null, projectId: null, severity: 'info', needsRoman: false, ts: null, data: null,
   })
 })
 
@@ -190,4 +192,27 @@ test('the producer token: a Bearer header, compared whole', () => {
   assert.equal(tokenMatches('abc12', 'abc123'), false)
   assert.equal(tokenMatches(null, 'abc123'), false)
   assert.equal(tokenMatches('', ''), false)
+})
+
+test('a typed payload rides on the event; it is rebuilt, and the stored event carries it', () => {
+  const r = parse({ kind: 'agent_result', title: 'Скан', source: 'shopping-scout', agentId: 'shopping-scout', data: shoppingFixture() })
+  assert.ok(r.ok)
+  assert.deepEqual(r.input.data, shoppingFixture())
+  const stored = toSystemEvent(r.input, NOW)
+  assert.deepEqual(stored.data, shoppingFixture())
+  // Without a payload the stored event has no `data` key at all — the same JSON as before.
+  assert.equal('data' in toSystemEvent(input(), NOW), false)
+})
+
+test('a payload that does not pass names the field, as any other field does', () => {
+  const bad = shoppingFixture()
+  bad.products[0]!.prices[0]!.price = 1.099
+  assert.deepEqual(parse({ kind: 'alert', title: 't', source: 's', data: bad }),
+    { ok: false, error: 'invalid_event', field: 'data.products[0].prices[0].price' })
+  assert.deepEqual(parse({ kind: 'alert', title: 't', source: 's', data: 'prices' }), { ok: false, error: 'invalid_event', field: 'data' })
+  const usd = shoppingFixture() as unknown as Record<string, unknown>
+  usd.currency = 'USD'
+  assert.deepEqual(parse({ kind: 'alert', title: 't', source: 's', data: usd }), { ok: false, error: 'invalid_event', field: 'data.currency' })
+  // null is «none», the same as leaving it out.
+  assert.ok(parse({ kind: 'alert', title: 't', source: 's', data: null }).ok)
 })

@@ -19,6 +19,7 @@ import { mkdir, readFile, rename, writeFile, chmod } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import type { IncomingHttpHeaders } from 'node:http'
 import type { AgentEventKind, Severity, SystemEvent } from '../../../src/data/types.ts'
+import { parseShoppingPrices, type ShoppingPricesV1 } from '../../../src/data/shopping-prices.ts'
 import { expandHome } from './session-state.ts'
 
 export const EVENT_KINDS: readonly AgentEventKind[] = ['agent_started', 'agent_result', 'agent_finished', 'agent_blocked', 'alert']
@@ -54,6 +55,8 @@ export interface EventInput {
   needsRoman: boolean
   /** Event time (ms); null — the time it arrives. */
   ts: number | null
+  /** A typed payload that passed `parseShoppingPrices`; null — none was sent. */
+  data: ShoppingPricesV1 | null
 }
 
 export type EventParse =
@@ -137,13 +140,22 @@ export function parseEventInput(text: string, now: number = Date.now()): EventPa
     ts = parsed
   }
 
-  return { ok: true, input: { id, kind, title, detail, source, agentId, taskId, projectId, severity, needsRoman, ts } }
+  // A typed payload is checked by the one contract both sides share; the first
+  // bad field is named, as with the rest of the body.
+  let data: ShoppingPricesV1 | null = null
+  if (raw.data !== undefined && raw.data !== null) {
+    const parsedData = parseShoppingPrices(raw.data)
+    if (!parsedData.ok) return invalid(parsedData.field)
+    data = parsedData.data
+  }
+
+  return { ok: true, input: { id, kind, title, detail, source, agentId, taskId, projectId, severity, needsRoman, ts, data } }
 }
 
 /** The envelope every record in Crow OS MP carries, stamped by the Event Center on arrival. */
 export function toSystemEvent(input: EventInput, receivedAt: number, newId: () => string = randomUUID): SystemEvent {
   const at = new Date(receivedAt).toISOString()
-  return {
+  const event: SystemEvent = {
     id: input.id ?? newId(),
     user_id: null,
     created_at: at,
@@ -161,6 +173,8 @@ export function toSystemEvent(input: EventInput, receivedAt: number, newId: () =
     severity: input.severity,
     needsRoman: input.needsRoman,
   }
+  if (input.data) event.data = input.data
+  return event
 }
 
 /** A row read back from disk: only what the phone would accept goes out. */
