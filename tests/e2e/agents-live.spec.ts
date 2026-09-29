@@ -72,6 +72,18 @@ async function bootLive(page: Page, body: unknown = snapshot({ agents: AGENTS, e
   await expect(page.locator('body')).toHaveAttribute('data-ready', '1')
 }
 
+/**
+ * Does anything on this screen reach past the phone's width? Measured on the
+ * screen's own scroller once the screen has stopped sliding in: during the
+ * switch it moves by translateX(22px), which WebKit counts into the page's
+ * scrollWidth for a frame or two — that is the animation, not overflow.
+ */
+async function overflowsSideways(page: Page, id: string): Promise<boolean> {
+  const el = page.locator(`#screen-${id}`)
+  await el.evaluate((node) => Promise.all(node.getAnimations().map((a) => a.finished.catch(() => undefined))))
+  return el.evaluate((node) => node.scrollWidth > node.clientWidth || node.getBoundingClientRect().right > window.innerWidth + 0.5)
+}
+
 const rowOf = (page: Page, id: string) => page.locator(`#screen-agents [data-action="select-agent"][data-id="${id}"]`)
 
 test('live agents are marked наживо; the silent one says «немає даних», not offline', async ({ page }) => {
@@ -189,7 +201,7 @@ test('any number of products and stores: the fixed template holds, the zone orde
   await expect(card.locator('.price-none')).toHaveText('Нових знижок немає')
   const order = await card.evaluate((el) => [...el.children].map((c) => c.className.split(' ').filter((x) => x.startsWith('price-'))[0]))
   expect(order).toEqual(['price-head', 'price-zone', 'price-zone', 'price-foot'])
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+  expect(await overflowsSideways(page, 'agents')).toBe(false)
 })
 
 test('«Події»: the card sits under its event, and an event without a payload stays plain text', async ({ page }) => {
@@ -202,7 +214,7 @@ test('«Події»: the card sits under its event, and an event without a payl
   // Only the event that carries data has a card.
   const withCard = await screen.locator('.card-row').evaluateAll((rows) => rows.map((r) => r.nextElementSibling?.classList.contains('event-data') ?? false))
   expect(withCard).toEqual([true, false])
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+  expect(await overflowsSideways(page, 'events')).toBe(false)
 })
 
 test('an event whose payload is wrong is drawn as text; the rest of the snapshot is untouched', async ({ page }) => {
