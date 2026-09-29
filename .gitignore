@@ -29,4 +29,4 @@ npm-debug.log*
 # Службові метадані сесії Claude. Команди в .claude/commands/ — комітяться,
 # межі конкретної сесії — ні (вони дублюються в HANDOFF → ПОТОЧНИЙ СТАН).
 .claude/.session-runtime.json
-
+.claude/settings.local.json
