@@ -1,18 +1,21 @@
 /**
  * The live adapter — a composite.
  *
- * Memory comes from GBrain through the Roma gateway, and events from its Event
- * Center when that is switched on; agents, projects, blockers and attention
- * stay on the demo fixtures, each still marked «демо» on screen, because
- * nothing real feeds them yet. A missing key in the snapshot means exactly
- * that: not live, so not shown as live — a gateway without the Event Center
- * leaves the events on the demo feed. Tasks are neither: Roman's own, kept on
+ * Memory comes from GBrain through the Roma gateway, events from its Event
+ * Center when that is switched on, and agents from its registry; projects,
+ * blockers and attention stay on the demo fixtures, each still marked «демо»
+ * on screen, because nothing real feeds them yet. A missing key in the
+ * snapshot means exactly that: not live, so not shown as live — a gateway
+ * without the Event Center leaves the events on the demo feed, and one from
+ * before the agents leaves the agents on the demo. Tasks are neither: Roman's own, kept on
  * this device and marked «локально» in both modes.
  *
  * What the phone keeps: the last normalised snapshot only — MemoryFact[], the
- * events when there are any, fetchedAt and the source label — under one key,
+ * events and agents when there are any, fetchedAt and the source label — under one key,
  * replaced on every success, removed when the source goes back to demo. Never
- * a raw GBrain response, never a page, never a token.
+ * a raw GBrain response, never a page, never a token. A cache written before a
+ * key existed simply lacks it (parseSnapshot reads every optional key on its own),
+ * and one that cannot be read at all is dropped and replaced by the next refresh.
  *
  * When the Mac is asleep the last snapshot stays on screen, marked stale with
  * the reason; the adapter never falls back to the demo facts on its own.
@@ -21,12 +24,14 @@ import { emitDataChanged } from '../core/events.js'
 import { GatewayError, type GatewayErrorKind, type LiveSnapshot } from '../hermes/contract.js'
 import { fetchSnapshot, parseSnapshot } from '../hermes/gateway.js'
 import { mockAdapter, readLocalTasks, type DataAdapter } from './adapters.js'
-import type { MemoryFact, Sourced, SystemEvent } from './types.js'
+import type { Agent, MemoryFact, Sourced, SystemEvent } from './types.js'
 
 const CACHE_KEY = 'roma_live_snapshot'
 const NO_DATA_SOURCE = 'gateway: даних ще немає'
 /** Where live events come from, as the screens name it. */
 export const EVENTS_SOURCE = 'gateway:events'
+/** Where live agents come from: the gateway's registry, read against the events and Hermes. */
+export const AGENTS_SOURCE = 'gateway:agents'
 
 export interface LiveStatus {
   /** When the facts on screen were fetched; null when there are none. */
@@ -49,7 +54,9 @@ export const liveAdapter: DataAdapter = {
   memory: (): Sourced<MemoryFact[]> => snapshot
     ? { value: snapshot.memory, origin: 'live', source: snapshot.source, fetchedAt: snapshot.fetchedAt }
     : { value: [], origin: 'live', source: NO_DATA_SOURCE, fetchedAt: 0 },
-  agents: () => mockAdapter.agents(),
+  agents: (): Sourced<Agent[]> => snapshot?.agents
+    ? { value: snapshot.agents, origin: 'live', source: AGENTS_SOURCE, fetchedAt: snapshot.fetchedAt }
+    : mockAdapter.agents(),
   projects: () => mockAdapter.projects(),
   blockers: (projectId) => mockAdapter.blockers(projectId),
   events: (limit = 50): Sourced<SystemEvent[]> => snapshot?.events
@@ -108,5 +115,6 @@ function readCache(): LiveSnapshot | null {
 function writeCache(next: LiveSnapshot): void {
   const slim: LiveSnapshot = { memory: next.memory, fetchedAt: next.fetchedAt, source: next.source }
   if (next.events) slim.events = next.events
+  if (next.agents) slim.agents = next.agents
   try { localStorage.setItem(CACHE_KEY, JSON.stringify(slim)) } catch { /* quota or private mode: live still works for this visit */ }
 }

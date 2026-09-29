@@ -1,8 +1,10 @@
 /** Domain shapes for the OS core. Personal modules come later, as modules. */
 import type { Entity } from '../core/entity.js'
+import type { ShoppingPricesV1 } from './shopping-prices.js'
 
 export type Risk = 'L0' | 'L1' | 'L2' | 'L3'
-export type AgentStatus = 'online' | 'idle' | 'offline'
+/** `unknown` — nothing is known about the agent (no events, no probe): not «offline», which says it is not running. */
+export type AgentStatus = 'online' | 'idle' | 'offline' | 'unknown'
 export type Severity = 'info' | 'warning' | 'critical'
 
 export interface Agent extends Entity {
@@ -13,6 +15,11 @@ export interface Agent extends Entity {
   risk: Risk
   /** What it is doing right now, in one line. */
   task: string | null
+  /**
+   * The newest thing the Event Center heard from it. Live agents only — the
+   * demo fixtures have a `task` instead. Absent or null: nothing heard yet.
+   */
+  lastActivity?: { ts: number; title: string } | null
 }
 
 export interface Blocker extends Entity {
@@ -58,6 +65,12 @@ export interface SystemEvent extends Entity {
   severity?: Severity
   /** Roman has to act. A flag across kinds, like a task's — not a kind of its own. */
   needsRoman?: boolean
+  /**
+   * A typed payload a producer may attach, drawn by the app from a fixed
+   * template. Only ever a payload that passed `parseShoppingPrices`; an event
+   * whose payload did not is text, as before.
+   */
+  data?: ShoppingPricesV1
 }
 
 export type TaskStatus = 'backlog' | 'planned' | 'in_progress' | 'blocked' | 'done'

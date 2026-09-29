@@ -3,7 +3,7 @@
  * the Event Center.
  *
  *   iPhone (PWA on GitHub Pages) → HTTPS → Tailscale Serve → 127.0.0.1:8787 → this
- *                                                                    ├─ GET  /api/v1/state  → GBrain recall (read-only) + the newest events
+ *                                                                    ├─ GET  /api/v1/state  → GBrain recall (read-only) + the newest events + the agents
  *                                                                    └─ POST /api/v1/crow   → Hermes /api/ws (loopback) → one reply
  *   producer on this Mac (curl, an agent) → 127.0.0.1:8787 ────────────── POST /api/v1/events → the Event Center (events.ts)
  *
@@ -21,16 +21,18 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { identityFrom, isAllowed, parseAllowlist } from './auth.ts'
 import { corsHeaders, parseOrigins } from './cors.ts'
 import { CROW_LIMITS, crowFailure, crowReply, parseCrowRequest, readBody } from './crow.ts'
+import { AGENT_REGISTRY } from './agents.ts'
 import { bearerFrom, EVENT_LIMITS, fileEventStore, parseEventInput, tokenMatches, toSystemEvent, type EventStore } from './events.ts'
 import { connectGBrain } from './gbrain.ts'
 import { createHermesClient, type CrowBrain } from './hermes-client.ts'
+import { createHermesProbe } from './hermes-probe.ts'
 import { mapFacts } from './mapping.ts'
 import { expandHome, fileSessionStore } from './session-state.ts'
 import { createStateBuilder, type FactsReader, type Snapshot } from './state.ts'
 import { readSecretFile } from './token.ts'
 
 const HOST = '127.0.0.1'   // never 0.0.0.0 — Serve is the only way in
-export const VERSION = '0.3.0'
+export const VERSION = '0.4.0'
 
 export interface GatewayConfig {
   port: number
@@ -242,9 +244,11 @@ export function startServer(
   reader: FactsReader,
   crow: CrowBrain | null = null,
   events: EventCenter | null = null,
+  hermesAlive: (() => Promise<boolean>) | null = null,
 ): ReturnType<typeof createServer> {
   const buildState = createStateBuilder(reader, mapFacts, config.recallLimit, Date.now,
-    events ? { reader: events.store, limit: EVENT_LIMITS.inSnapshot } : null)
+    events ? { reader: events.store, limit: EVENT_LIMITS.inSnapshot, all: EVENT_LIMITS.keep } : null,
+    { registry: AGENT_REGISTRY, hermesAlive })
   const handler = createHandler(config, buildState, crow, events)
   const server = createServer((req, res) => {
     handler(req, res).catch((err) => {
@@ -300,7 +304,8 @@ async function main(): Promise<void> {
     console.warn('[gateway] ROMA_EVENTS_TOKEN_FILE is empty — POST /api/v1/events answers 501; the phone keeps its demo feed')
   }
 
-  const server = startServer(config, reader, crow, events)
+  const hermesAlive = hermes ? createHermesProbe(hermes.wsUrl) : null
+  const server = startServer(config, reader, crow, events, hermesAlive)
   const shutdown = (signal: string) => {
     console.log(`[gateway] ${signal}: shutting down`)
     server.close()

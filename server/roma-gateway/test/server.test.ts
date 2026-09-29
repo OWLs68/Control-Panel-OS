@@ -5,6 +5,8 @@ import { configFromEnv, createHandler, eventsConfigFromEnv, type EventCenter } f
 import { createStateBuilder, type FactsReader } from '../src/state.ts'
 import { mapFacts } from '../src/mapping.ts'
 import { EVENT_LIMITS, memoryEventStore, tokenMatches } from '../src/events.ts'
+import { AGENT_REGISTRY } from '../src/agents.ts'
+import { shoppingFixture } from '../../../tests/fixtures/shopping-prices.ts'
 
 const ROW = { id: 78, fact_id: '78', fact: 'факт', kind: 'preference', entity_slug: 'roman-ai-os', valid_from: '2026-09-20T22:53:17.918Z', created_at: '2026-09-20T22:53:19.774Z' }
 
@@ -54,7 +56,8 @@ let evBase = ''
 
 before(async () => {
   const config = configFromEnv({ ROMA_ALLOWED_LOGINS: LOGIN, ROMA_ALLOWED_ORIGINS: ORIGIN, GBRAIN_RECALL_LIMIT: '5' })
-  const buildState = createStateBuilder(reader, mapFacts, config.recallLimit, Date.now, { reader: eventStore, limit: EVENT_LIMITS.inSnapshot })
+  const buildState = createStateBuilder(reader, mapFacts, config.recallLimit, Date.now, { reader: eventStore, limit: EVENT_LIMITS.inSnapshot, all: EVENT_LIMITS.keep },
+    { registry: AGENT_REGISTRY, hermesAlive: async () => true })
   const handler = createHandler(config, buildState, null, center)
   evServer = createServer((req, res) => { void handler(req, res) })
   await new Promise<void>((r) => evServer.listen(0, '127.0.0.1', r))
@@ -207,4 +210,40 @@ test('a producer token that cannot be read is 503, and nothing is written', asyn
   } finally {
     tokenReadable = true
   }
+})
+
+test('Scout\'s scan with prices goes in, comes back in the state with the agents read from it', async () => {
+  const res = await postEvent({
+    id: 'shopping-scout.scan.run-1', kind: 'agent_result', title: 'Скан 07:00', detail: '3 товари, 1 знижка',
+    source: 'Shopping Scout', agentId: 'shopping-scout', data: shoppingFixture(),
+  })
+  assert.equal(res.status, 201)
+  const state = await (await fetch(`${evBase}/api/v1/state`, { headers: { 'tailscale-user-login': LOGIN } })).json() as {
+    events: Array<{ id: string; data?: { type: string; products: unknown[] } }>
+    agents: Array<{ id: string; status: string; lastActivity: { title: string } | null }>
+  }
+  const stored = state.events.find((e) => e.id === 'shopping-scout.scan.run-1')
+  assert.equal(stored?.data?.type, 'shopping_prices.v1')
+  assert.equal(stored?.data?.products.length, 3)
+  const byId = Object.fromEntries(state.agents.map((a) => [a.id, a]))
+  assert.equal(byId['crow']?.status, 'online')                       // Hermes answered
+  assert.equal(byId['shopping-scout']?.status, 'idle')
+  assert.equal(byId['shopping-scout']?.lastActivity?.title, 'Скан 07:00')
+  assert.equal(byId['mac-worker']?.status, 'unknown')                // nothing heard: not offline
+})
+
+test('a scan whose payload is wrong is refused, the field named, and nothing is stored', async () => {
+  const before = (await eventStore.list(500)).length
+  const bad = shoppingFixture()
+  bad.products[0]!.cheapest = 'Jumbo'
+  const res = await postEvent({ kind: 'agent_result', title: 'Скан', source: 'Shopping Scout', agentId: 'shopping-scout', data: bad })
+  assert.equal(res.status, 400)
+  assert.deepEqual(await res.json(), { error: 'invalid_event', field: 'data.products[0].cheapest' })
+  assert.equal((await eventStore.list(500)).length, before)
+})
+
+test('an event without a payload is still text, as before, and the same id twice is one event', async () => {
+  const body = { id: 'scout-text-1', kind: 'agent_result', title: 'Скан завершено', source: 'Shopping Scout', agentId: 'shopping-scout' }
+  assert.equal((await postEvent(body)).status, 201)
+  assert.equal((await postEvent(body)).status, 200)
 })

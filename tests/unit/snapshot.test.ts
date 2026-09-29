@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { afterEach, test } from 'node:test'
 import { fetchSnapshot, normalizeGatewayUrl, parseSnapshot } from '../../src/hermes/gateway.js'
 import { GatewayError } from '../../src/hermes/contract.js'
+import { shoppingFixture } from '../fixtures/shopping-prices.js'
 
 const FACT = {
   id: '78', user_id: null, created_at: '2026-09-20T22:53:19.774Z', updated_at: '2026-09-20T22:53:19.774Z',
@@ -92,4 +93,54 @@ test('an event the phone cannot render is left out; it never takes memory down w
   assert.equal(parseSnapshot({ ...SNAPSHOT, events: [demo] })?.events?.length, 1)
   // Not a list at all is not a snapshot.
   assert.equal(parseSnapshot({ ...SNAPSHOT, events: 'nope' }), null)
+})
+
+const AGENT = {
+  id: 'shopping-scout', user_id: null, created_at: '2026-09-29T10:00:00.000Z', updated_at: '2026-09-29T10:00:00.000Z',
+  deleted_at: null, hlc: null, name: 'Shopping Scout', role: 'Пошук знижок', model: 'сервіс на Mac', status: 'idle', risk: 'L0',
+  task: null, lastActivity: { ts: 1_790_000_000_000, title: 'Скан 07:00' },
+}
+
+test('agents ride along; «unknown» is a status; without the key the snapshot has none', () => {
+  const snap = parseSnapshot({ ...SNAPSHOT, agents: [AGENT, { ...AGENT, id: 'mac-worker', status: 'unknown', lastActivity: null }] })
+  assert.deepEqual(snap?.agents?.map((a) => [a.id, a.status]), [['shopping-scout', 'idle'], ['mac-worker', 'unknown']])
+  assert.equal('agents' in (parseSnapshot(SNAPSHOT) ?? {}), false)
+})
+
+test('an agent the phone cannot read is left out; a key that is not a list is ignored, not an error', () => {
+  const snap = parseSnapshot({
+    ...SNAPSHOT,
+    agents: [AGENT, { ...AGENT, id: 'a', status: 'sleeping' }, { ...AGENT, id: 'b', risk: 'L9' }, { ...AGENT, id: 'c', name: '' }, { ...AGENT, id: 'd', lastActivity: { ts: 'now', title: 'x' } }, 'junk'],
+  })
+  assert.deepEqual(snap?.agents?.map((a) => a.id), ['shopping-scout'])
+  const ignored = parseSnapshot({ ...SNAPSHOT, agents: 'nope' })
+  assert.ok(ignored)
+  assert.equal('agents' in ignored, false)
+  assert.deepEqual(ignored.memory, [FACT])
+})
+
+test('an event carries its price payload only if it passes; a bad payload leaves the event as text', () => {
+  const good = { ...EVENT, id: 'p1', kind: 'agent_result', agentId: 'shopping-scout', data: shoppingFixture() }
+  const badPrice = shoppingFixture()
+  badPrice.products[0]!.prices[0]!.price = -1
+  const bad = { ...EVENT, id: 'p2', data: badPrice }
+  const junk = { ...EVENT, id: 'p3', data: 'not an object' }
+  const snap = parseSnapshot({ ...SNAPSHOT, events: [good, bad, junk] })
+  assert.deepEqual(snap?.events?.map((e) => e.id), ['p1', 'p2', 'p3'])
+  assert.equal(snap?.events?.[0]?.data?.products.length, 3)
+  assert.equal('data' in (snap?.events?.[1] ?? {}), false)
+  assert.equal('data' in (snap?.events?.[2] ?? {}), false)
+})
+
+test('a cache written before agents and payloads existed still reads: exactly as it was, no agents', () => {
+  const old = { memory: [FACT], fetchedAt: 1_700_000_000_000, source: 'gbrain:recall', events: [EVENT] }
+  const snap = parseSnapshot(JSON.parse(JSON.stringify(old)))
+  assert.deepEqual(snap, old)
+  assert.equal('agents' in (snap ?? {}), false)
+})
+
+test('a cache that cannot be read at all is nothing, not a crash', () => {
+  for (const junk of [null, 'x', 42, [], {}, { memory: 'x' }, { memory: [], fetchedAt: 'never', source: 'gbrain:recall' }]) {
+    assert.equal(parseSnapshot(junk), null)
+  }
 })

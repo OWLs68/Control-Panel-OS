@@ -1,9 +1,10 @@
 /**
  * The snapshot the phone reads.
  *
- * Only what is really live goes in: memory from GBrain, and — when the Event
- * Center is switched on (ROMA_EVENTS_TOKEN_FILE) — the newest events. Agents,
- * projects, blockers and attention are deliberately ABSENT — not empty arrays —
+ * Only what is really live goes in: memory from GBrain, the newest events when
+ * the Event Center is switched on (ROMA_EVENTS_TOKEN_FILE), and the agents —
+ * the registry read against those events and Hermes' answer (agents.ts).
+ * Projects, blockers and attention are deliberately ABSENT — not empty arrays —
  * so the app keeps showing them from its demo fixtures, marked as such. The
  * same holds for events while the Event Center is off.
  *
@@ -11,7 +12,8 @@
  * events are read on every call, outside that cache: they are a local file,
  * and a new one should not wait for GBrain's cache to expire.
  */
-import type { MemoryFact, SystemEvent } from '../../../src/data/types.ts'
+import type { Agent, MemoryFact, SystemEvent } from '../../../src/data/types.ts'
+import { deriveAgents, eventsForSnapshot, type AgentDef } from './agents.ts'
 
 export interface FactsReader {
   /** Newest first, active facts only. */
@@ -31,6 +33,14 @@ export interface Snapshot {
   dropped: number
   /** Present only while the Event Center is on. Newest first. */
   events?: SystemEvent[]
+  /** The registry, read against the events and Hermes' answer. Absent when the gateway has no registry. */
+  agents?: Agent[]
+}
+
+/** Who exists, and how to tell whether Crow's Hermes answers (null — nothing to ask: Crow is «немає даних»). */
+export interface AgentsSource {
+  registry: readonly AgentDef[]
+  hermesAlive: (() => Promise<boolean>) | null
 }
 
 export const SNAPSHOT_SOURCE = 'gbrain:recall'
@@ -41,7 +51,9 @@ export function createStateBuilder(
   mapFacts: (rows: unknown) => { facts: MemoryFact[]; dropped: number },
   limit: number,
   now: () => number = Date.now,
-  events: { reader: EventsReader; limit: number } | null = null,
+  /** `all`: how many events the agents are read from — the whole store, not the snapshot's newest. */
+  events: { reader: EventsReader; limit: number; all?: number } | null = null,
+  agents: AgentsSource | null = null,
 ) {
   let cached: Snapshot | null = null
 
@@ -51,7 +63,14 @@ export function createStateBuilder(
       const { facts, dropped } = mapFacts(rows)
       cached = { memory: facts, fetchedAt: now(), source: SNAPSHOT_SOURCE, dropped }
     }
-    if (!events) return cached
-    return { ...cached, events: await events.reader.list(events.limit) }
+    if (!events && !agents) return cached
+    const all = events ? await events.reader.list(Math.max(events.limit, events.all ?? events.limit)) : []
+    const snapshot: Snapshot = { ...cached }
+    if (events) snapshot.events = agents ? eventsForSnapshot(all, agents.registry, events.limit) : all.slice(0, events.limit)
+    if (agents) {
+      const alive = agents.hermesAlive ? await agents.hermesAlive() : null
+      snapshot.agents = deriveAgents(agents.registry, all, alive, now())
+    }
+    return snapshot
   }
 }

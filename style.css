@@ -1257,3 +1257,49 @@ button { font: inherit; color: inherit; border: none; background: none; cursor: 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* ── Shopping Scout's price card ─────────────────────────────────────────
+   No donor for this in NeverMind; built from the tokens the rows and badges
+   already use (PORTING.md §3). The cheapest price is green TEXT, so it uses the
+   dark green the badges use (#4a6340, 5.4:1) — --success itself is a fill. */
+.price-card { padding: 0 0 var(--sp-2); }
+.price-head {
+  display: grid; grid-template-columns: 1fr auto; gap: 3px var(--sp-3);
+  padding: 13px var(--sp-4) var(--sp-3);
+}
+.price-title { font-family: var(--font-d); font-weight: 700; font-size: var(--fs-md); }
+.price-when { font-size: var(--fs-sm); color: var(--text-2); text-align: right; }
+.price-stores-line { grid-column: 1 / -1; font-size: var(--fs-sm); color: #4a6340; font-weight: 600; }
+.price-stores-line.is-partial { color: #8f5316; }
+.price-zone { border-top: 1px solid var(--ink-line); padding: var(--sp-3) var(--sp-4); }
+.price-product + .price-product { margin-top: var(--sp-4); }
+.price-product-head, .price-deal { display: flex; align-items: flex-start; gap: var(--sp-3); }
+.price-emoji { font-size: 26px; line-height: 1; flex-shrink: 0; }
+.price-product-name { flex: 1; min-width: 0; }
+.price-name { display: block; font-weight: 700; font-size: 14.5px; line-height: 1.25; }
+.price-meta { display: block; margin-top: 2px; font-size: var(--fs-sm); color: var(--text-2); line-height: 1.35; }
+.price-from { font-family: var(--font-d); font-weight: 800; font-size: var(--fs-md); white-space: nowrap; }
+.price-shelf { margin: var(--sp-2) 0 0 38px; }
+.price-store { display: flex; justify-content: space-between; gap: var(--sp-3); padding: 3px 0; font-size: 13px; color: var(--text-2); }
+.price-store.is-cheapest { color: #4a6340; font-weight: 800; }
+.price-zone-label {
+  margin-bottom: var(--sp-2); font-size: var(--fs-xs); font-weight: 800; color: var(--secondary);
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+.price-deal + .price-deal { margin-top: var(--sp-3); }
+.price-deal-price { white-space: nowrap; font-size: 14px; }
+.price-deal-price s { color: var(--text-2); font-size: 12px; }
+.price-none { font-size: var(--fs-sm); color: var(--text-2); }
+.price-foot { border-top: 1px solid var(--ink-line); padding: var(--sp-3) var(--sp-4) var(--sp-2); font-size: var(--fs-sm); color: var(--text-2); }
+/* Inside the events feed the card sits under its row, indented past the row's padding. */
+.event-data + .card-row { border-top: 1px solid var(--ink-line); }
+.event-data { padding: 0 var(--sp-3) var(--sp-3); }
+.event-data .price-card { background: var(--ink-soft); border-radius: var(--r-md); }
+
+/* A detail screen's way back — NeverMind's «Назад» row (projects.js:118–122): chevron, then the list's name. */
+.screen-back {
+  display: flex; align-items: center; gap: 6px; min-height: 44px; margin-bottom: 4px;
+  font-size: 13px; font-weight: 700; color: var(--primary);
+}
+.screen-back svg { width: 16px; height: 16px; stroke-width: 2.5; }
+.agent-ask { margin-top: var(--sp-3); }

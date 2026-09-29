@@ -13,7 +13,8 @@
  */
 import { type CrowChip, type CrowReply, type CrowRequest, type HermesGateway, type LiveSnapshot, GatewayError } from './contract.js'
 import { stubGateway } from './stub.js'
-import type { MemoryFact, SystemEvent } from '../data/types.js'
+import { parseShoppingPrices } from '../data/shopping-prices.js'
+import type { Agent, MemoryFact, SystemEvent } from '../data/types.js'
 
 let gateway: HermesGateway = stubGateway
 
@@ -67,6 +68,8 @@ const SNAPSHOT_TIMEOUT_MS = 8_000
 const MEMORY_CATEGORIES = new Set(['system', 'project', 'person', 'preference'])
 const EVENT_KINDS = new Set(['deploy', 'index', 'backup', 'agent', 'note', 'agent_started', 'agent_result', 'agent_finished', 'agent_blocked', 'alert'])
 const SEVERITIES = new Set(['info', 'warning', 'critical'])
+const AGENT_STATUSES = new Set(['online', 'idle', 'offline', 'unknown'])
+const RISKS = new Set(['L0', 'L1', 'L2', 'L3'])
 
 /**
  * The gateway address as Roman typed it, cleaned, or null if it is not one we
@@ -134,9 +137,44 @@ export function parseSnapshot(body: unknown): LiveSnapshot | null {
     if (!Array.isArray(b.events)) return null
     // An event this phone cannot render (a kind a newer gateway knows) is left
     // out rather than taking the whole snapshot — and memory — down with it.
-    snapshot.events = b.events.filter(isSystemEvent)
+    // An event whose typed payload does not pass stays, as text: only the
+    // payload goes.
+    snapshot.events = b.events.filter(isSystemEvent).map(withCheckedData)
   }
+  // Agents are read the same forgiving way, and a missing or malformed key
+  // simply means «no live agents»: an older gateway, or an older cache, is not
+  // an error — the demo agents stay, marked as demo.
+  if (Array.isArray(b.agents)) snapshot.agents = b.agents.filter(isAgent)
   return snapshot
+}
+
+/** The event with a typed payload that passed the contract, or as plain text without one. */
+function withCheckedData(e: SystemEvent): SystemEvent {
+  const raw = (e as { data?: unknown }).data
+  if (raw === undefined) return e
+  const { data: _dropped, ...text } = e as SystemEvent & { data?: unknown }
+  void _dropped
+  const checked = parseShoppingPrices(raw)
+  return checked.ok ? { ...text, data: checked.data } : text
+}
+
+function isAgent(row: unknown): row is Agent {
+  if (!row || typeof row !== 'object') return false
+  const r = row as Record<string, unknown>
+  const nullableString = (v: unknown) => v === null || typeof v === 'string'
+  const activity = r.lastActivity
+  return typeof r.id === 'string' && r.id.length > 0
+    && typeof r.name === 'string' && r.name.length > 0
+    && typeof r.role === 'string' && typeof r.model === 'string'
+    && typeof r.status === 'string' && AGENT_STATUSES.has(r.status)
+    && typeof r.risk === 'string' && RISKS.has(r.risk)
+    && nullableString(r.task)
+    && (activity === undefined || activity === null || (
+      typeof activity === 'object' && typeof (activity as Record<string, unknown>).ts === 'number'
+      && Number.isFinite((activity as Record<string, unknown>).ts)
+      && typeof (activity as Record<string, unknown>).title === 'string'))
+    && typeof r.created_at === 'string' && typeof r.updated_at === 'string'
+    && nullableString(r.deleted_at) && nullableString(r.user_id) && nullableString(r.hlc)
 }
 
 function isSystemEvent(row: unknown): row is SystemEvent {
