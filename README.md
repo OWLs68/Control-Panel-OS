@@ -1,17 +1,17 @@
 # Crow OS MP
 
-Поточний змінний інтерфейс (replaceable interface/client) до **Crow AI OS** —
-не сама ОС. Не life-tracker, не щоденник, не admin-панель: з телефона видно,
+Поточний змінний інтерфейс (replaceable interface/client) до **Crow System** —
+не сама система. Не life-tracker, не щоденник, не admin-панель: з телефона видно,
 що відбувається в системі, що потребує Романа, що роблять агенти, що з
 проєктами — і можна сказати щось Crow. Мобільний сценарій головний.
 
 > **Починаєш нову сесію?** Читай `CLAUDE.md`, далі `docs/roma-os/HANDOFF.md`
 > і `docs/roma-os/STAGE-0.md`. Це репо — джерело правди для Crow OS MP (код,
 > repo-owned технічні документи, поточний технічний стан); handoff між сесіями
-> живе тільки тут, у git. Системна документація Crow AI OS — у Google Drive
-> (`Crow AI OS — Core Rules`, `Crow AI OS — Current State`, `Personal AI
-> Profile — Roman`; `Components / Crow OS MP`). GBrain — спільна довга памʼять
-> і пошук, не сховище канонічних документів.
+> живе тільки тут, у git. Канонічна системна документація — у приватному
+> репозиторії `OWLs68/crow-system`. Старі Google Docs — історичний аудит,
+> а не актуальна правда. GBrain — спільна довга памʼять і пошук, не сховище
+> канонічних документів.
 
 ---
 

@@ -92,30 +92,20 @@ git diff --stat <start_head>..HEAD -- src index.html style.css sw.js build.js se
   не видаляти, звіт із «CI червоний». Timeout → сказати, що прогін ще йде,
   runtime не видаляти. Ніколи не завершувати хід словами «чекаю CI».
 
-## 6. Project Sync — новий snapshot у Drive `Claude Sync`
+## 6. System docs impact
 
-Після коміту, push (або «не push») і потрібних тестів/CI — до звіту.
-**Кожен** буквальний `/finish` створює **новий** `finish`-snapshot, і
-повторний у тій самій сесії теж: без dedupe, без overwrite. Правило Drive,
-ID теки, формат і спосіб запису — `CLAUDE.md`, «Правила, які не
-обговорюються», перший пункт. Дозвіл на цей один файл уже в `/finish`.
+Після repo-owned документів перевірити, чи змінились системний стан, карта,
+рішення, план або ризик Crow System.
 
-```bash
-git fetch -q origin main || echo "main_remote: unknown"
-TZ=Europe/Amsterdam date +%Y-%m-%dT%H:%M:%S%:z   # timestamp у файлі
-TZ=Europe/Amsterdam date +%Y-%m-%d_%H%M%S        # префікс імені
-git branch --show-current; git rev-parse --short HEAD
-git rev-parse --short main; git rev-parse --short origin/main
-git status --porcelain                      # порожньо → clean
-```
+- Ні → у звіті `System docs impact: none`.
+- Так, і `OWLs68/crow-system` доступний у межах дозволеної задачі → оновити
+  відповідний canonical-документ за `docs/DOCUMENTATION_PROTOCOL.md`: нова
+  правда замінює стару, історичний факт не лишається другою актуальною правдою.
+- Так, але canonical repo недоступний або зміна поза дозволеним scope →
+  записати точний impact у `HANDOFF.md` / `SESSION_LOG.md` як pending і явно
+  назвати це Роману. Не створювати заміну в Google Drive чи GBrain.
 
-Імʼя: `<префікс>_finish_<short-head>.md`. Зміст — зріз за шаблоном з фактів
-кроків 1–5 (стан, журнал, push, verify/e2e/CI), а не копія `SESSION_LOG`.
-
-- Вдалося → у звіті `Drive sync: OK`.
-- Не вдалося → у звіті `Drive sync: FAILED` + коротка причина. Нікуди
-  більше не писати, канонічні документи не чіпати; коміт і push репо
-  лишаються як є — їх не відкочувати.
+Старий Project Sync у Drive завершено. `/finish` не створює Drive snapshot.
 
 ## 7. Runtime-файл і звіт
 
@@ -124,7 +114,7 @@ git status --porcelain                      # порожньо → clean
 лишається — це те, що дозволяє доробити ту саму сесію, а не почати нову поверх.
 
 Звіт ≤ 8 рядків українською: що записано, `verify/e2e/CI` або «код не
-мінявся», `Drive sync: OK` / `Drive sync: FAILED — причина`, що чекає
+мінявся», `System docs impact: none / updated / pending — причина`, що чекає
 Романа, `Branch / work_end_head / main не чіпався`.
 
 ## Якщо щось пішло не так

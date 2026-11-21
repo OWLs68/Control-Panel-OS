@@ -260,7 +260,7 @@ gateway відповідає `-32601`, і агент одразу отримує
 ## 5.1. Event Center — справжні події (зріз 3)
 
 Значуща діяльність Crow/Hermes і агентів спершу стає структурованою подією;
-«Події» — її історія. Порядок (Product Spec §7): real Events pipeline →
+«Події» — її історія. Узгоджений порядок: real Events pipeline →
 notification policy → WebPush. Push — шар доставки поверх, не сховище, і в
 цьому зрізі його немає.
 
@@ -270,8 +270,8 @@ producer на Mac ──POST /api/v1/events──▶ Roma gateway ──▶ ~/.r
 iPhone ◀── GET /api/v1/state (events) ◀─────┘  → live-adapter → «Події», Control
 ```
 
-**Чому біля gateway, а не в GBrain timeline.** Події — операційний потік, а
-не довга памʼять (Core Rules §7). `add_timeline_entry` GBrain приймає лише
+**Чому біля gateway, а не в GBrain timeline.** За моделлю Crow System події —
+операційний потік, а не довга памʼять. `add_timeline_entry` GBrain приймає лише
 дату без часу і не має полів виду, агента чи `needsRoman`. Сам Shopping Scout
 теж тримає свій стан у власній SQLite, а не в GBrain.
 
