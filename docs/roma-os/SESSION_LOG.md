@@ -1,4 +1,4 @@
-# Roma OS — журнал сесій
+# Crow OS MP — журнал сесій
 
 Історія роботи. Нові сесії **зверху**.
 
@@ -11,6 +11,39 @@
 Блок пише `/finish`, ≤ 40 рядків, деталі — у профільних документах.
 Повторний `/finish` тієї самої сесії **дописує** «### Доповнення» в той самий
 блок — не переписує і не створює новий. Ротації поки немає.
+
+---
+
+## 2026-11-21 — 20261121-codex-crow-system-cutover — системний cutover у main
+
+- Зроблено: активні README, `CLAUDE.md`, `HANDOFF.md`, `STAGE-0.md` і
+  `/finish` переведені з Google Drive на приватний `OWLs68/crow-system` як
+  системне джерело правди.
+- Зроблено: Drive Project Sync завершено; видалені post-merge hook і його
+  settings; `/finish` тепер перевіряє `System docs impact` і не створює
+  snapshot у Drive.
+- Зроблено: прибране застаріле ексклюзивне володіння репо Claude Code;
+  дозволений Романом агент може працювати за єдиними правилами дозволів,
+  перевірки й документації.
+- Зроблено: живий стан `HANDOFF.md` звірений з `main` `7cad937`; зафіксовані
+  real Events, live Control/needsRoman, live Agents і картка цін Scout.
+- Зроблено: під час merge-gate знайдено CI runner drift, не дефект продукту:
+  Playwright 1.56 не встановлюється на новому Ubuntu 26.04. E2E job закріплено
+  на підтримуваному Ubuntu 24.04 (`ISS-009`); `npm run verify` ✅ 73/73,
+  CI 104 ✅ checks / gateway / Chromium + WebKit.
+- Виявлено: `npm ci` повідомляє про 20 dependency advisories; безпечний розбір
+  і план оновлення винесені окремо в `ISS-010`, автоматичний force-fix не робився.
+- Рішення Романа: Crow OS MP — один зі змінних інтерфейсів Crow System;
+  Google Docs — історичний аудит, не актуальна правда.
+- Інциденти: перший CI впав до тестів через перехід `ubuntu-latest` на 26.04;
+  причина виправлена й перевірена окремим зеленим CI 104.
+- Відкрито / далі: закрити відповідний reconciliation gap у
+  `OWLs68/crow-system`; окремо перевірити
+  runtime на Mac та приймання на iPhone для `7cad937`; окремо розібрати
+  dependency advisories з `ISS-010`.
+
+Branch `main` · Start/Work end `7cad937` · verify ✅ 73/73 · CI 104 ✅
+· продуктовий код не змінювався · deploy після merge ще не перевірений
 
 ---
 

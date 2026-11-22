@@ -20,47 +20,40 @@
 > «поточний HEAD». Актуальний HEAD тут не зберігається взагалі: `/start`
 > бере його через `git rev-parse HEAD`.
 
-- **session_id:** `20260923-1903-xgrk8r` (наближення: `/start` не запускався, межі — з reflog)
-- **started_at:** `2026-09-23T19:03:51Z`
-- **branch:** `claude/fervent-johnson-xgrk8r`
-- **start_head:** `05a72d3`
-- **start_main:** `05a72d3`
-- **work_end_head:** `1962ba7`
+- **session_id:** `20261121-codex-crow-system-cutover`
+- **started_at:** `2026-11-21`
+- **branch:** `main`
+- **start_head:** `7cad937`
+- **start_main:** `7cad937`
+- **work_end_head:** `7cad937` (документаційна зміна; продуктовий код не чіпався)
 
-**Де зупинились.** «Задачі» — у `main` з `e1684e5`. Project Sync — у `main`
-з `c9903c0` (24.09): Drive-тека `Claude Sync`, правило й формат snapshot у
-`CLAUDE.md`, крок 6 `/finish`, PostToolUse hook (спрацював наживо на цьому
-merge), час snapshot — `Europe/Amsterdam`. CI 92 ✅, deploy 34 ✅, живий URL
-на `c9903c0`. Поза цим repo: `OWLs68/Crow-Agents` — Shopping Scout v0.1 з
-MCP-адаптером на гілці `claude/cool-johnson-kag2sn` (у `main` Crow-Agents
-його ще немає); за `Crow AI OS — Current State` (26.09) Hermes уже викликає
-Scout через 8 вузьких MCP tools, тригера й доставки в Crow OS MP немає.
+**Де зупинились.** Продуктовий стан `main` базується на `7cad937`: уже змерджені real Events pipeline,
+живі «Події» і Control, реальне «Потребує мене» та реактивна бульбашка Crow,
+живі «Агенти», екран агента і картка цін Shopping Scout. Цей merge
+переносить системне джерело правди з історичних Google Docs у приватний
+`OWLs68/crow-system`, завершує Drive Project Sync і прибирає merge-hook, який
+створював нові snapshot. Продуктовий код і runtime не змінювались; deploy та
+приймання на Mac/iPhone в цій документаційній роботі не перевірялись.
 
-**Фаза (Current State, 26.09).** Learning-first: розібратись з агентами на
-практиці, Shopping Scout — навчальний кейс. Crow OS MP — допоміжна панель:
-робота тут лише там, де вона прямо підтримує видимість і контроль (Kanban,
-Events, статус агентів, blockers, `needsRoman`) або прибирає конкретний
-usability blocker. Діяльність агентів має спершу ставати справжніми
-структурованими подіями: real Events pipeline → notification policy →
-WebPush (Product Spec §7).
+**Фаза.** Crow OS MP — один зі змінних інтерфейсів Crow System, а не сама
+система. Поточний repo-owned технічний стан живе тут; системна карта, рішення,
+плани й документаційний протокол — у `OWLs68/crow-system`.
 
 **Blockers.** Немає.
 
-**Наступний крок.** Real Events pipeline, перший зріз, зроблений у гілці
-`claude/new-session-51tdj4` (локальні коміти, 26.09, **не запушено**): `curl` →
-`POST /api/v1/events` → Event Center біля gateway → `GET /api/v1/state` →
-«Події» і Control (`GATEWAY.md §5.1`). Разом із ним — прибраний drift: видимі
-назви Crow OS MP, чесні тексти демо-режиму, у «Наживо» немає демо-«Потребує
-мене», карта системи за реальним станом. Далі: «push» і «merge» — лише за
-словом; кроки на Mac (`GATEWAY.md §9.7`); приймання на iPhone
-(`STAGE-1.md §6.7`). Без WebPush, без Scout як producer.
+**Наступний крок.** Documentation cutover змерджено після зеленого CI 104
+(checks, gateway, Chromium + WebKit). Оновити `OWLs68/crow-system`, закрити
+reconciliation gap і фінально перевірити споживачів старого канону. Окремою
+задачею — звірити runtime на Mac та
+приймання на iPhone з уже змердженим станом `7cad937`.
 
 **Чекає рішення Романа.**
-1. Перевірка «Задач» на iPhone за `STAGE-1.md §6.6`
-2. Envelope «Задач» без вибору несе до пʼяти назв «потребує Романа» (`GATEWAY.md §6`) — лишити чи обмежити
-3. «push» і «merge» зрізу Events, потім кроки на Mac (`GATEWAY.md §9.7`) і приймання `STAGE-1.md §6.7`
-4. Shopping Scout як перший producer подій — після PASS зрізу Events, окремим рішенням
-5. Далі за backlog: види задач у Проєктах/Агентах; Control «Потребує мене» з реальних даних (задачі + події); notification policy → WebPush; редагування й видалення; якість відповідей Crow
+1. Приймання на Mac/iPhone для стану `7cad937`: «Задачі», live Events,
+   `needsRoman`, live Agents і картка цін Shopping Scout.
+2. Envelope «Задач» без вибору несе до пʼяти назв «потребує Романа»
+   (`GATEWAY.md §6`) — лишити чи обмежити.
+3. Подальший продуктовий пріоритет: producer Scout, notification policy →
+   WebPush, звʼязки задач із Проєктами/Агентами чи інше з backlog.
 
 ---
 
@@ -183,14 +176,10 @@ NeverMind — **донор механік, а не закон продукту**
 **Крок 1 — контекст продукту (обов'язково):**
 1. `docs/roma-os/STAGE-0.md` — ухвалені рішення, палітра, що звідки беремо
 2. `docs/roma-os/mockup.html` — відкрити в браузері, потицяти. Це цільова композиція
-3. Google Drive, тека «Crow AI OS» — **canonical системна документація,
-   read-only**. Handoff між сесіями там не живе:
-   - `Crow AI OS — Core Rules` — глобальні правила системи
-   - `Crow AI OS — Current State` — поточний стан системи
-   - `Personal AI Profile — Roman`
-   - `Components / Crow OS MP`: `Crow OS MP — Product / Interface Spec`
-     (переписаний зі старого «Interface / NeverMind clone — working spec») і
-     `Crow OS MP — Notification WebPush decision — 2026-09-21`
+3. Приватний репозиторій `OWLs68/crow-system` — canonical системна
+   документація: `README.md` → `docs/CURRENT_STATE.md` → релевантний
+   профільний документ. Дотримуватись його `AGENTS.md` і
+   `docs/DOCUMENTATION_PROTOCOL.md`. Старі Google Docs — лише історичний аудит.
 
 **Крок 2 — донор:**
 ```
@@ -475,14 +464,14 @@ Finance, Evening, Me, інтелекту digital clone. *(Межа Етапу 1,
 - Зліпок старої Control Panel: гілка `legacy/control-panel-v1` (коміт `bd55a42`)
 - Живий URL віддає Crow OS MP — `main` деплоїться на GitHub Pages з `8db3760`
 - `main` і production deploy без окремого дозволу не чіпаються (HOT RULE 3)
-- Crow OS MP — поточний змінний інтерфейс/клієнт Crow AI OS, не сама ОС;
+- Crow OS MP — поточний змінний інтерфейс/клієнт Crow System, не сама система;
   Crow/Hermes — cross-system orchestrator; NeverMind — донор UI/UX, не
   архітектурне джерело правди (рішення 22.09)
 - Repo-owned стан і handoff між сесіями живуть **тільки в репо**: `CLAUDE.md`,
   `docs/roma-os/HANDOFF.md`, `docs/roma-os/SESSION_LOG.md`, `docs/roma-os/ISSUES.md`,
-  `docs/roma-os/STAGE-0.md`. Системна документація Crow AI OS — у Google Drive
-  (`Core Rules`, `Current State`, `Personal AI Profile — Roman`); GBrain —
-  спільна памʼять, не канон. У Drive нових handoff-файлів не створювати
+  `docs/roma-os/STAGE-0.md`. Системна документація Crow System — у приватному
+  `OWLs68/crow-system`; GBrain — спільна памʼять, не канон. Google Docs і
+  `Claude Sync` — історичні; нових snapshot там не створювати
 - Hermes: у «Наживо» Crow іде через Roma gateway до справжнього Hermes на Mac (`GATEWAY.md §4`); у «Демо» — заглушка
 
 **Обмеження середовища:**
@@ -493,8 +482,8 @@ Finance, Evening, Me, інтелекту digital clone. *(Межа Етапу 1,
   шлях резолвиться через `scripts/chromium-path.mjs`
 
 **Відкриті питання до Романа:**
-1. ~~Чи лишається окрема вкладка Notes~~ — відкладено (Product Spec §11, parked)
+1. ~~Чи лишається окрема вкладка Notes~~ — відкладено (parked)
 2. Шрифтова пара — зараз Bricolage Grotesque + Manrope, підтвердити або замінити
 3. ~~Коли підключати Productivity~~ — знято 22.09: наступний продуктовий крок — native work tracker
 4. ~~Реальний спосіб достукатись до Hermes з телефона~~ — є: Roma gateway → Hermes `/api/ws` (21.09)
-5. ~~Чи потрібна темна тема~~ — відкладено (Product Spec §11, parked)
+5. ~~Чи потрібна темна тема~~ — відкладено (parked)
