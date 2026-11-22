@@ -80,7 +80,9 @@ jobs:
   # once the app is served from its real URL.
   smoke:
     needs: deploy
-    runs-on: ubuntu-latest
+    # Playwright 1.56.1 has browser/dependency mappings for Ubuntu 24.04,
+    # while ubuntu-latest currently resolves to unsupported Ubuntu 26.04.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
