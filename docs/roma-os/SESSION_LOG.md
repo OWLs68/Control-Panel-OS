@@ -30,20 +30,23 @@
 - Зроблено: під час merge-gate знайдено CI runner drift, не дефект продукту:
   Playwright 1.56 не встановлюється на новому Ubuntu 26.04. E2E job закріплено
   на підтримуваному Ubuntu 24.04 (`ISS-009`); `npm run verify` ✅ 73/73,
-  CI 104 ✅ checks / gateway / Chromium + WebKit.
+  CI 104 і фінальний CI 106 ✅ checks / gateway / Chromium + WebKit.
+- Зроблено: після merge deploy 38 опублікував сайт, але smoke зупинився на
+  тому самому unsupported runner. Smoke job теж закріплено на Ubuntu 24.04
+  (`ISS-011`); deploy 39 ✅ build / publish / smoke живого URL.
 - Виявлено: `npm ci` повідомляє про 20 dependency advisories; безпечний розбір
   і план оновлення винесені окремо в `ISS-010`, автоматичний force-fix не робився.
 - Рішення Романа: Crow OS MP — один зі змінних інтерфейсів Crow System;
   Google Docs — історичний аудит, не актуальна правда.
-- Інциденти: перший CI впав до тестів через перехід `ubuntu-latest` на 26.04;
-  причина виправлена й перевірена окремим зеленим CI 104.
+- Інциденти: CI 103 і smoke deploy 38 впали до тестів через перехід
+  `ubuntu-latest` на 26.04; обидва Playwright jobs виправлені та перевірені.
 - Відкрито / далі: закрити відповідний reconciliation gap у
   `OWLs68/crow-system`; окремо перевірити
   runtime на Mac та приймання на iPhone для `7cad937`; окремо розібрати
   dependency advisories з `ISS-010`.
 
-Branch `main` · Start/Work end `7cad937` · verify ✅ 73/73 · CI 104 ✅
-· продуктовий код не змінювався · deploy після merge ще не перевірений
+Branch `main` · Start `7cad937` · Work end `d1485c7` · verify ✅ 73/73
+· CI 106 ✅ · deploy 39 ✅ · продуктовий код не змінювався
 
 ---
 

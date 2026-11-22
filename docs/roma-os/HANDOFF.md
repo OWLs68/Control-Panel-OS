@@ -25,15 +25,16 @@
 - **branch:** `main`
 - **start_head:** `7cad937`
 - **start_main:** `7cad937`
-- **work_end_head:** `7cad937` (документаційна зміна; продуктовий код не чіпався)
+- **work_end_head:** `d1485c7` (документація й CI workflow; продуктовий код не чіпався)
 
 **Де зупинились.** Продуктовий стан `main` базується на `7cad937`: уже змерджені real Events pipeline,
 живі «Події» і Control, реальне «Потребує мене» та реактивна бульбашка Crow,
-живі «Агенти», екран агента і картка цін Shopping Scout. Цей merge
-переносить системне джерело правди з історичних Google Docs у приватний
-`OWLs68/crow-system`, завершує Drive Project Sync і прибирає merge-hook, який
-створював нові snapshot. Продуктовий код і runtime не змінювались; deploy та
-приймання на Mac/iPhone в цій документаційній роботі не перевірялись.
+живі «Агенти», екран агента і картка цін Shopping Scout. Merge `533fd7a`
+переніс системне джерело правди з історичних Google Docs у приватний
+`OWLs68/crow-system`, завершив Drive Project Sync і прибрав merge-hook, який
+створював нові snapshot. Follow-up `d1485c7` закріпив Playwright smoke на
+Ubuntu 24.04. Продуктовий код і runtime не змінювались; CI 106 та deploy 39
+зелені, приймання на Mac/iPhone в цій роботі не виконувалось.
 
 **Фаза.** Crow OS MP — один зі змінних інтерфейсів Crow System, а не сама
 система. Поточний repo-owned технічний стан живе тут; системна карта, рішення,
@@ -41,11 +42,10 @@
 
 **Blockers.** Немає.
 
-**Наступний крок.** Documentation cutover змерджено після зеленого CI 104
-(checks, gateway, Chromium + WebKit). Оновити `OWLs68/crow-system`, закрити
-reconciliation gap і фінально перевірити споживачів старого канону. Окремою
-задачею — звірити runtime на Mac та
-приймання на iPhone з уже змердженим станом `7cad937`.
+**Наступний крок.** Оновити `OWLs68/crow-system`, закрити reconciliation gap
+і зафіксувати фінальну перевірку споживачів старого канону. Окремими задачами —
+звірити runtime на Mac та приймання на iPhone для продуктового стану `7cad937`,
+а також безпечно розібрати dependency advisories з `ISS-010`.
 
 **Чекає рішення Романа.**
 1. Приймання на Mac/iPhone для стану `7cad937`: «Задачі», live Events,

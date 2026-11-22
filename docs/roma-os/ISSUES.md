@@ -191,6 +191,20 @@ ISS-003/005/006/007 — `fixed`: виправлено в коді й перев�
 
 ## Закриті
 
+### ISS-011 — smoke deploy не міг встановити Playwright на Ubuntu 26.04
+
+- **status:** `verified`
+- **priority:** `high`
+- **discovered:** 2026-11-22, deploy run 38 після merge `533fd7a`
+- **area:** `.github/workflows/deploy.yml` / smoke живого URL
+- **actual behavior:** build і Pages deploy пройшли, але smoke job упав на
+  Install browsers до тесту опублікованого сайту.
+- **cause:** smoke лишався на `ubuntu-latest`, який перейшов на Ubuntu 26.04;
+  Playwright 1.56.1 не має для нього browser/dependency mappings.
+- **fix commit:** `d1485c7` — лише smoke job закріплено на `ubuntu-24.04`.
+- **verification:** deploy run 39 — success для build, publish і smoke живого
+  URL; CI run 106 — success checks, gateway, Chromium + WebKit, 2026-11-22.
+
 ### ISS-009 — CI не міг встановити Playwright на Ubuntu 26.04
 
 - **status:** `verified`
