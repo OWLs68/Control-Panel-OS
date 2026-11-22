@@ -60,7 +60,9 @@ jobs:
         run: npm run verify --workspace server/roma-gateway
 
   e2e:
-    runs-on: ubuntu-latest
+    # Playwright 1.56 supports Ubuntu 24.04. GitHub moved ubuntu-latest to
+    # 26.04, where browser installation fails before any test can start.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 

@@ -42,7 +42,10 @@
 **Blockers.** Немає.
 
 **Наступний крок.** Гілку `docs/crow-system-canonical-cutover` запушено.
-Перевірити й змерджити документаційний cutover окремим дозволом; після merge позначити відповідний reconciliation gap у
+CI run 103 виявив незалежний runner drift: `ubuntu-latest` став 26.04, яку
+Playwright 1.56 не підтримує. E2E job закріплено на Ubuntu 24.04; після
+зеленого повторного CI змерджити документаційний cutover за вже наданим
+дозволом; після merge позначити відповідний reconciliation gap у
 `OWLs68/crow-system` як закритий. Окремою задачею — звірити runtime на Mac та
 приймання на iPhone з уже змердженим станом `7cad937`.
 

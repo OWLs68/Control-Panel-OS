@@ -27,9 +27,26 @@ ID наскрізні: `ISS-001`, `ISS-002`, … Ротації немає — �
 
 ## Відкриті
 
-ISS-002 і ISS-004 — `verified` зі скріншота живого iPhone 20.09 23:10. Решта
-чотири — `fixed`: виправлено в коді й перевірено headless, чекають перевірки
-на телефоні (`STAGE-1.md §6.2`), після якої стануть `verified`.
+### ISS-009 — CI не може встановити Playwright на Ubuntu 26.04
+
+- **status:** `fixed`
+- **priority:** `high`
+- **discovered:** 2026-11-21, CI run 103 на документаційній гілці
+- **area:** `.github/workflows/ci.yml` / e2e
+- **actual behavior:** job `e2e` падає на кроці Install browsers до запуску
+  тестів: Playwright 1.56.1 не підтримує `ubuntu26.04-x64`.
+- **expected behavior:** CI встановлює Chromium і WebKit та запускає весь
+  iPhone-набір E2E.
+- **cause:** GitHub runner `ubuntu-latest` перейшов на Ubuntu 26.04, тоді як
+  поточний Playwright має офіційні browser/dependency mappings до Ubuntu 24.04.
+- **fix:** e2e job закріплено на `ubuntu-24.04`; checks і gateway лишаються
+  на `ubuntu-latest`, де вони проходять.
+- **verification:** локальний `npm run verify` ✅ (73/73 unit); повторний CI
+  має підтвердити Chromium + WebKit перед merge.
+
+ISS-002 і ISS-004 — `verified` зі скріншота живого iPhone 20.09 23:10.
+ISS-003/005/006/007 — `fixed`: виправлено в коді й перевірено headless,
+чекають перевірки на телефоні (`STAGE-1.md §6.2`). ISS-009 чекає повторного CI.
 
 ### ISS-002 — поле вводу ховається за барабаном на живому iPhone
 

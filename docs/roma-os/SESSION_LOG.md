@@ -27,6 +27,9 @@
   перевірки й документації.
 - Зроблено: живий стан `HANDOFF.md` звірений з `main` `7cad937`; зафіксовані
   real Events, live Control/needsRoman, live Agents і картка цін Scout.
+- Зроблено: під час merge-gate знайдено CI runner drift, не дефект продукту:
+  Playwright 1.56 не встановлюється на новому Ubuntu 26.04. E2E job закріплено
+  на підтримуваному Ubuntu 24.04 (`ISS-009`); `npm run verify` ✅ 73/73.
 - Рішення Романа: Crow OS MP — один зі змінних інтерфейсів Crow System;
   Google Docs — історичний аудит, не актуальна правда.
 - Інциденти: без інцидентів.
